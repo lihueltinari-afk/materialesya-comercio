@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../theme.dart';
-import 'main_screen.dart';
+import 'verificar_email_screen.dart';
 
 class RegistroScreen extends StatefulWidget {
   const RegistroScreen({super.key});
@@ -175,7 +175,7 @@ class _RegistroScreenState extends State<RegistroScreen> {
       if (!mounted) return;
 
       Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const MainScreen()),
+        MaterialPageRoute(builder: (_) => VerificarEmailScreen(email: _emailCtrl.text.trim())),
         (_) => false,
       );
     } catch (e) {

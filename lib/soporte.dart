@@ -1,9 +1,7 @@
 // Botón de Ayuda/Soporte: abre WhatsApp con un mensaje prearmado.
-// TODO: reemplazar por el número real de soporte (formato internacional sin '+' ni espacios,
-// ej: 5492610000000 para Argentina). Mientras tanto queda un número de ejemplo.
 import 'package:url_launcher/url_launcher.dart';
 
-const String numeroSoporteWhatsApp = '5492610000000'; // TODO: poner el número real acá
+const String numeroSoporteWhatsApp = '5492604399394';
 
 Future<void> abrirSoporteWhatsApp({String? pedidoId}) async {
   final mensaje = pedidoId != null

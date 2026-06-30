@@ -1,5 +1,6 @@
 // Pantalla para actualizar precios y stock de muchos productos a la vez,
-// subiendo un archivo CSV con columnas: producto_id,precio,stock
+// subiendo un archivo CSV o Excel (.xlsx) con columnas: producto_id, precio, stock
+import 'package:excel/excel.dart' as xls;
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
@@ -43,10 +44,28 @@ class _CargaMasivaScreenState extends State<CargaMasivaScreen> {
     return filas;
   }
 
+  // Convierte la primera hoja de un Excel en filas {producto_id, precio, stock}.
+  // Misma lógica que el CSV: tolera encabezado, toma columnas A/B/C (0,1,2).
+  List<Map<String, dynamic>> _parsearExcel(List<int> bytes) {
+    final filas = <Map<String, dynamic>>[];
+    final libro = xls.Excel.decodeBytes(bytes);
+    if (libro.tables.isEmpty) return filas;
+    final hoja = libro.tables.values.first;
+    for (final fila in hoja.rows) {
+      if (fila.isEmpty) continue;
+      final productoId = int.tryParse('${fila[0]?.value ?? ''}'.trim());
+      if (productoId == null) continue; // probablemente encabezado o fila vacía
+      final precio = double.tryParse('${fila.length > 1 ? fila[1]?.value ?? '' : ''}'.trim());
+      final stock = fila.length > 2 ? int.tryParse('${fila[2]?.value ?? ''}'.trim()) : null;
+      filas.add({'producto_id': productoId, 'precio': precio, 'stock': stock ?? 0});
+    }
+    return filas;
+  }
+
   Future<void> _elegirArchivo() async {
     final resultado = await FilePicker.platform.pickFiles(
       type: FileType.custom,
-      allowedExtensions: ['csv'],
+      allowedExtensions: ['csv', 'xlsx', 'xls'],
       withData: true,
     );
     if (resultado == null || resultado.files.isEmpty) return;
@@ -58,10 +77,10 @@ class _CargaMasivaScreenState extends State<CargaMasivaScreen> {
     setState(() { _procesando = true; _error = null; _resultado = null; _nombreArchivo = archivo.name; });
 
     try {
-      final contenido = String.fromCharCodes(archivo.bytes!);
-      final filas = _parsearCsv(contenido);
+      final esExcel = archivo.name.toLowerCase().endsWith('.xlsx') || archivo.name.toLowerCase().endsWith('.xls');
+      final filas = esExcel ? _parsearExcel(archivo.bytes!) : _parsearCsv(String.fromCharCodes(archivo.bytes!));
       if (filas.isEmpty) {
-        setState(() { _procesando = false; _error = 'El archivo no tiene filas válidas (producto_id,precio,stock)'; });
+        setState(() { _procesando = false; _error = 'El archivo no tiene filas válidas (producto_id, precio, stock)'; });
         return;
       }
       final res = await ApiService.importarProductosCsv(filas);
@@ -83,10 +102,12 @@ class _CargaMasivaScreenState extends State<CargaMasivaScreen> {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.grey.shade200)),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Text('Formato del archivo CSV', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: _textDark)),
+              const Text('Formato del archivo (CSV o Excel)', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: _textDark)),
               const SizedBox(height: 8),
               const Text(
-                'Una fila por producto, separadas por coma:\n\nproducto_id,precio,stock\n241,12500,20\n247,3400,15\n\n'
+                'Una fila por producto, 3 columnas: producto_id, precio, stock.\n\n'
+                'CSV: producto_id,precio,stock\n241,12500,20\n247,3400,15\n\n'
+                'Excel (.xlsx): la misma info en columnas A, B y C de la primera hoja.\n\n'
                 'El producto_id es el ID del catálogo maestro (lo podés ver en "Catálogo maestro" → buscador).',
                 style: TextStyle(fontSize: 12, color: Colors.grey, height: 1.5),
               ),
@@ -98,7 +119,7 @@ class _CargaMasivaScreenState extends State<CargaMasivaScreen> {
             child: ElevatedButton.icon(
               onPressed: _procesando ? null : _elegirArchivo,
               icon: const Icon(Icons.upload_file),
-              label: Text(_procesando ? 'Procesando...' : 'Elegir archivo CSV'),
+              label: Text(_procesando ? 'Procesando...' : 'Elegir archivo (CSV o Excel)'),
               style: ElevatedButton.styleFrom(backgroundColor: _amber, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
             ),
           ),

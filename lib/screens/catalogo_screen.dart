@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../services/api_service.dart';
 import 'carga_masiva_screen.dart';
 
@@ -13,13 +14,18 @@ class CatalogoScreen extends StatefulWidget {
   State<CatalogoScreen> createState() => _CatalogoScreenState();
 }
 
+const _porPagina = 24;
+
 class _CatalogoScreenState extends State<CatalogoScreen> {
   final _busquedaCtrl = TextEditingController();
+  final _scrollCtrl = ScrollController();
   List<dynamic> _productos = [];
   List<dynamic> _categorias = [];
   List<dynamic> _misProductos = [];
   int? _categoriaSeleccionada;
   bool _cargando = false;
+  bool _cargandoMas = false;
+  bool _hayMas = true;
   bool _vistaMisProductos = false;
 
   @override
@@ -27,6 +33,17 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
     super.initState();
     _cargarCategorias();
     _buscar();
+    _scrollCtrl.addListener(() {
+      if (_scrollCtrl.position.pixels > _scrollCtrl.position.maxScrollExtent - 300) {
+        _cargarMas();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollCtrl.dispose();
+    super.dispose();
   }
 
   Future<void> _cargarCategorias() async {
@@ -34,13 +51,37 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
     setState(() => _categorias = cats);
   }
 
+  // Primera página de resultados (reinicia la lista al buscar/filtrar).
   Future<void> _buscar() async {
-    setState(() => _cargando = true);
-    final prods = await ApiService.buscarCatalogo(
+    setState(() { _cargando = true; _hayMas = true; });
+    final res = await ApiService.buscarCatalogoPagina(
       busqueda: _busquedaCtrl.text,
       categoriaId: _categoriaSeleccionada,
+      limit: _porPagina,
+      offset: 0,
     );
-    setState(() { _productos = prods; _cargando = false; });
+    setState(() {
+      _productos = res['productos'];
+      _hayMas = res['hayMas'] ?? false;
+      _cargando = false;
+    });
+  }
+
+  // Página siguiente: se dispara sola al llegar cerca del final del scroll (infinite scroll).
+  Future<void> _cargarMas() async {
+    if (_cargandoMas || !_hayMas || _cargando || _vistaMisProductos) return;
+    setState(() => _cargandoMas = true);
+    final res = await ApiService.buscarCatalogoPagina(
+      busqueda: _busquedaCtrl.text,
+      categoriaId: _categoriaSeleccionada,
+      limit: _porPagina,
+      offset: _productos.length,
+    );
+    setState(() {
+      _productos = [..._productos, ...(res['productos'] as List)];
+      _hayMas = res['hayMas'] ?? false;
+      _cargandoMas = false;
+    });
   }
 
   Future<void> _cargarMisProductos() async {
@@ -180,9 +221,15 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
             : (_productos.isEmpty
                 ? const Center(child: Text('No se encontraron productos', style: TextStyle(color: Colors.grey)))
                 : ListView.builder(
+                    controller: _scrollCtrl,
                     padding: const EdgeInsets.all(12),
-                    itemCount: _productos.length,
-                    itemBuilder: (_, i) => _cardProducto(_productos[i]),
+                    itemCount: _productos.length + (_cargandoMas ? 1 : 0),
+                    itemBuilder: (_, i) {
+                      if (i >= _productos.length) {
+                        return const Padding(padding: EdgeInsets.symmetric(vertical: 16), child: Center(child: CircularProgressIndicator(color: _amber, strokeWidth: 2)));
+                      }
+                      return _cardProducto(_productos[i]);
+                    },
                   )),
       ),
     ]);
@@ -240,7 +287,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
         ClipRRect(
           borderRadius: BorderRadius.circular(8),
           child: prod['imagen_principal_url'] != null
-            ? Image.network(prod['imagen_principal_url'], width: 60, height: 60, fit: BoxFit.cover, errorBuilder: (_, __, ___) => _placeholder())
+            ? CachedNetworkImage(imageUrl: prod['imagen_principal_url'], width: 60, height: 60, fit: BoxFit.cover, errorWidget: (_, __, ___) => _placeholder())
             : _placeholder(),
         ),
         const SizedBox(width: 12),
@@ -329,7 +376,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
         ClipRRect(
           borderRadius: BorderRadius.circular(8),
           child: prod['imagen_principal_url'] != null
-            ? Image.network(prod['imagen_principal_url'], width: 60, height: 60, fit: BoxFit.cover, errorBuilder: (_, __, ___) => _placeholder())
+            ? CachedNetworkImage(imageUrl: prod['imagen_principal_url'], width: 60, height: 60, fit: BoxFit.cover, errorWidget: (_, __, ___) => _placeholder())
             : _placeholder(),
         ),
         const SizedBox(width: 12),

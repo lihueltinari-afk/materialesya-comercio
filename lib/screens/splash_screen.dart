@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import 'login_screen.dart';
 import 'main_screen.dart';
+import 'aceptar_terminos_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -24,25 +25,30 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
 
   Future<void> _checkSession() async {
     if (!mounted) return;
+    final aceptados = await terminosYaAceptados();
     final token = await ApiService.obtenerToken();
     if (!mounted) return;
+
+    Widget destino = const LoginScreen();
     if (token != null && token.isNotEmpty) {
       // Token existe — verificar que el comercio también está guardado
       final comercioId = await ApiService.obtenerComercioId();
       if (!mounted) return;
       if (comercioId != null) {
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const MainScreen()));
-        return;
-      }
-      // Token pero sin comercioId — intentar cargar
-      final comercio = await ApiService.miComercio();
-      if (!mounted) return;
-      if (comercio != null) {
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const MainScreen()));
-        return;
+        destino = const MainScreen();
+      } else {
+        // Token pero sin comercioId — intentar cargar
+        final comercio = await ApiService.miComercio();
+        if (!mounted) return;
+        if (comercio != null) destino = const MainScreen();
       }
     }
-    Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const LoginScreen()));
+
+    if (aceptados) {
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => destino));
+    } else {
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => AceptarTerminosScreen(destino: destino)));
+    }
   }
 
   @override

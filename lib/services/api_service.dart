@@ -206,17 +206,22 @@ class ApiService {
   }
 
   /// Busca productos en el catálogo maestro.
-  static Future<List<dynamic>> buscarCatalogo({String busqueda = '', int? categoriaId}) async {
-    var query = '?';
-    if (busqueda.isNotEmpty) query += 'busqueda=${Uri.encodeComponent(busqueda)}&';
-    if (categoriaId != null) query += 'categoria_id=$categoriaId&';
+  /// Trae una página del catálogo maestro (infinite scroll: la app va pidiendo de a 24
+  /// productos con offset creciente a medida que el usuario llega al final de la lista).
+  /// Devuelve {'productos': [...], 'hayMas': bool}.
+  static Future<Map<String, dynamic>> buscarCatalogoPagina({
+    String busqueda = '', int? categoriaId, int limit = 24, int offset = 0,
+  }) async {
+    var query = '?limit=$limit&offset=$offset';
+    if (busqueda.isNotEmpty) query += '&busqueda=${Uri.encodeComponent(busqueda)}';
+    if (categoriaId != null) query += '&categoria_id=$categoriaId';
     final res = await get('/catalogo-maestro$query');
     if (res['status'] == 200) {
       final data = res['data'];
-      if (data is List) return data;
-      if (data is Map) return data['productos'] ?? [];
+      if (data is Map) return {'productos': data['productos'] ?? [], 'hayMas': data['hayMas'] ?? false};
+      if (data is List) return {'productos': data, 'hayMas': data.length == limit};
     }
-    return [];
+    return {'productos': [], 'hayMas': false};
   }
 
   /// Obtiene las categorías del catálogo.

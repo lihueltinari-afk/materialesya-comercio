@@ -17,7 +17,7 @@ class PerfilScreen extends StatefulWidget {
   State<PerfilScreen> createState() => _PerfilScreenState();
 }
 
-class _PerfilScreenState extends State<PerfilScreen> {
+class _PerfilScreenState extends State<PerfilScreen> with WidgetsBindingObserver {
   Map<String, dynamic>? _comercio;
   bool _cargando = true;
   bool _guardando = false;
@@ -39,8 +39,19 @@ class _PerfilScreenState extends State<PerfilScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _cargarPerfil();
     _cargarEstadoMp();
+  }
+
+  // Cuando el comercio vuelve a la app después de autorizar en la pestaña de Mercado Pago
+  // (resumed), reconsultamos el estado para que el "Conectado" aparezca solo, sin que tenga
+  // que salir y volver a entrar a Perfil a mano.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && _mpConectado != true) {
+      _cargarEstadoMp();
+    }
   }
 
   Future<void> _cargarEstadoMp() async {
@@ -119,6 +130,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _nombreCtrl.dispose();
     _direccionCtrl.dispose();
     _telefonoCtrl.dispose();

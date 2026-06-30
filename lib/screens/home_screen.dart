@@ -231,7 +231,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       _statCard('${_estadisticas?['entregados'] ?? 0}', 'Entregados', Icons.check_circle, Colors.green),
                       const SizedBox(width: 8),
                       _statCard(
-                        '\$${((_estadisticas?['ingresos'] ?? 0) as num).toStringAsFixed(0)}',
+                        '\$${(num.tryParse('${_estadisticas?['ingresos'] ?? 0}') ?? 0).toStringAsFixed(0)}',
                         'Ingresos',
                         Icons.attach_money,
                         Colors.teal,

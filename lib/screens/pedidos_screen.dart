@@ -16,6 +16,7 @@ class _PedidosScreenState extends State<PedidosScreen> {
   bool _cargando = true;
   String _filtroEstado = 'todos';
   Timer? _timer;
+  Timer? _tickerCountdown;
 
   final List<Map<String, String>> _filtros = [
     {'valor': 'todos', 'label': 'Todos'},
@@ -31,11 +32,16 @@ class _PedidosScreenState extends State<PedidosScreen> {
     super.initState();
     _cargarPedidos();
     _timer = Timer.periodic(const Duration(seconds: 15), (_) => _cargarPedidos());
+    // Ticker liviano solo para refrescar el countdown visual de pedidos pendientes (no pide datos nuevos).
+    _tickerCountdown = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted && _pedidos.any((p) => p['estado'] == 'pendiente')) setState(() {});
+    });
   }
 
   @override
   void dispose() {
     _timer?.cancel();
+    _tickerCountdown?.cancel();
     super.dispose();
   }
 
@@ -89,6 +95,23 @@ class _PedidosScreenState extends State<PedidosScreen> {
       'cancelado': 'Cancelado',
     };
     return labels[estado] ?? estado;
+  }
+
+  // Para pedidos pendientes: minutos y segundos restantes antes de que el backend lo
+  // cancele automáticamente por vencimiento (límite de 5 minutos para aceptar/rechazar).
+  String? _tiempoRestanteParaAceptar(String? fechaStr) {
+    if (fechaStr == null) return null;
+    try {
+      final creado = DateTime.parse(fechaStr);
+      final limite = creado.add(const Duration(minutes: 5));
+      final restante = limite.difference(DateTime.now());
+      if (restante.isNegative) return 'Vencido';
+      final min = restante.inMinutes;
+      final seg = restante.inSeconds % 60;
+      return '$min:${seg.toString().padLeft(2, '0')}';
+    } catch (_) {
+      return null;
+    }
   }
 
   String _tiempoDesde(String? fechaStr) {
@@ -194,7 +217,7 @@ class _PedidosScreenState extends State<PedidosScreen> {
     final numero = pedido['numero'] ?? pedido['id'] ?? '?';
     final clienteNombre = pedido['cliente']?['nombre'] ?? pedido['cliente_nombre'] ?? 'Cliente';
     final total = double.tryParse(pedido['total']?.toString() ?? '0') ?? 0;
-    final tiempo = _tiempoDesde(pedido['created_at']);
+    final tiempo = _tiempoDesde(pedido['creado_en']?.toString());
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
@@ -230,7 +253,10 @@ class _PedidosScreenState extends State<PedidosScreen> {
                       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                     ),
                     Text(clienteNombre, style: const TextStyle(color: Colors.grey, fontSize: 12)),
-                    if (tiempo.isNotEmpty)
+                    if (estado == 'pendiente' && _tiempoRestanteParaAceptar(pedido['creado_en']?.toString()) != null)
+                      Text('⏱ ${_tiempoRestanteParaAceptar(pedido['creado_en']?.toString())} para responder',
+                        style: const TextStyle(color: Colors.deepOrange, fontSize: 11, fontWeight: FontWeight.w700))
+                    else if (tiempo.isNotEmpty)
                       Text(tiempo, style: const TextStyle(color: Colors.grey, fontSize: 11)),
                   ],
                 ),

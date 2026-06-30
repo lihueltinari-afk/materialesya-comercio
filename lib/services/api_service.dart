@@ -5,7 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
   // TODO: volver a la URL de Railway antes de compilar para producción.
-  static const String _base = 'http://10.0.2.2:3000/api'; // localhost del emulador Android
+  static const String _base = 'http://localhost:3000/api';
 
   static VoidCallback? onSesionExpirada;
   static bool _sesionExpirandose = false;
@@ -199,7 +199,8 @@ class ApiService {
     final res = await get('/comercio/pedidos$query');
     if (res['status'] == 200) {
       final data = res['data'];
-      return data['pedidos'] ?? data ?? [];
+      if (data is List) return data;
+      if (data is Map) return data['pedidos'] ?? [];
     }
     return [];
   }
@@ -212,7 +213,8 @@ class ApiService {
     final res = await get('/catalogo-maestro$query');
     if (res['status'] == 200) {
       final data = res['data'];
-      return data['productos'] ?? data ?? [];
+      if (data is List) return data;
+      if (data is Map) return data['productos'] ?? [];
     }
     return [];
   }
@@ -222,7 +224,8 @@ class ApiService {
     final res = await get('/catalogo-maestro/categorias');
     if (res['status'] == 200) {
       final data = res['data'];
-      return data['categorias'] ?? data ?? [];
+      if (data is List) return data;
+      if (data is Map) return data['categorias'] ?? [];
     }
     return [];
   }
@@ -242,7 +245,8 @@ class ApiService {
     final res = await get('/comercio/mis-productos');
     if (res['status'] == 200) {
       final data = res['data'];
-      return data['productos'] ?? data ?? [];
+      if (data is List) return data;
+      if (data is Map) return data['productos'] ?? [];
     }
     return [];
   }
@@ -308,6 +312,13 @@ class ApiService {
       return true;
     }
     return false;
+  }
+
+  /// Carga masiva de precios/stock. Recibe filas ya parseadas: [{producto_id, precio, stock}, ...]
+  static Future<Map<String, dynamic>> importarProductosCsv(List<Map<String, dynamic>> productos) async {
+    final res = await post('/comercio/productos/importar', {'productos': productos});
+    if (res['status'] == 200) return res['data'];
+    return {'actualizados': 0, 'errores': ['Error de conexión con el servidor']};
   }
 
   /// Cuenta pedidos pendientes (para badges).

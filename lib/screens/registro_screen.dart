@@ -5,6 +5,7 @@ import '../theme.dart';
 import '../legal_texts.dart';
 import 'verificar_email_screen.dart';
 import 'legal_screen.dart';
+import 'mapa_confirmar_ubicacion_screen.dart';
 
 class RegistroScreen extends StatefulWidget {
   const RegistroScreen({super.key});
@@ -27,6 +28,8 @@ class _RegistroScreenState extends State<RegistroScreen> {
   final _telefonoCtrl = TextEditingController();
   double _radioEntrega = 5;
   final _cbuCtrl = TextEditingController();
+  double? _lat;
+  double? _lng;
 
   // Paso 3
   final _nombrePropietarioCtrl = TextEditingController();
@@ -89,6 +92,10 @@ class _RegistroScreenState extends State<RegistroScreen> {
           _mostrarError('Ingresá la dirección');
           return false;
         }
+        if (_lat == null || _lng == null) {
+          _mostrarError('Confirmá la ubicación en el mapa');
+          return false;
+        }
         if (_telefonoCtrl.text.trim().isEmpty) {
           _mostrarError('Ingresá el teléfono');
           return false;
@@ -122,6 +129,21 @@ class _RegistroScreenState extends State<RegistroScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(mensaje), backgroundColor: Colors.red),
     );
+  }
+
+  Future<void> _confirmarUbicacion() async {
+    final resultado = await Navigator.push<Map<String, dynamic>>(context, MaterialPageRoute(
+      builder: (_) => MapaConfirmarUbicacionScreen(
+        direccionInicial: _direccionCtrl.text.trim(),
+        latInicial: _lat, lngInicial: _lng,
+      ),
+    ));
+    if (resultado == null || !mounted) return;
+    setState(() {
+      _lat = resultado['lat'];
+      _lng = resultado['lng'];
+      if ((resultado['direccion'] as String).isNotEmpty) _direccionCtrl.text = resultado['direccion'];
+    });
   }
 
   Future<void> _registrar() async {
@@ -161,6 +183,8 @@ class _RegistroScreenState extends State<RegistroScreen> {
         'tipo': _tipoSeleccionado,
         'cuit': _cuitCtrl.text.trim(),
         'direccion': _direccionCtrl.text.trim(),
+        'lat': _lat,
+        'lng': _lng,
         'telefono': _telefonoCtrl.text.trim(),
         'radio_entrega_km': _radioEntrega.round(),
         'cbu_alias': _cbuCtrl.text.trim(),
@@ -329,6 +353,17 @@ class _RegistroScreenState extends State<RegistroScreen> {
           decoration: const InputDecoration(
             labelText: 'Dirección *',
             border: OutlineInputBorder(),
+          ),
+        ),
+        const SizedBox(height: 8),
+        OutlinedButton.icon(
+          onPressed: _confirmarUbicacion,
+          icon: Icon(_lat != null ? Icons.check_circle : Icons.map_outlined, color: _lat != null ? Colors.green : kNaranja),
+          label: Text(_lat != null ? 'Ubicación confirmada en el mapa ✓' : 'Confirmar ubicación en el mapa *',
+            style: TextStyle(color: _lat != null ? Colors.green : kNaranja)),
+          style: OutlinedButton.styleFrom(
+            side: BorderSide(color: _lat != null ? Colors.green : kNaranja),
+            minimumSize: const Size.fromHeight(46),
           ),
         ),
         const SizedBox(height: 16),

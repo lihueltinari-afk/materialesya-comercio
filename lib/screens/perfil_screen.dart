@@ -1,10 +1,14 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:image_picker/image_picker.dart';
 import '../services/api_service.dart';
 import '../theme.dart';
 import '../soporte.dart';
 import '../legal_texts.dart';
 import 'login_screen.dart';
 import 'legal_screen.dart';
+import 'mapa_confirmar_ubicacion_screen.dart';
 
 class PerfilScreen extends StatefulWidget {
   const PerfilScreen({super.key});
@@ -17,6 +21,8 @@ class _PerfilScreenState extends State<PerfilScreen> {
   Map<String, dynamic>? _comercio;
   bool _cargando = true;
   bool _guardando = false;
+  bool? _mpConectado;
+  bool _conectandoMp = false;
 
   final _nombreCtrl = TextEditingController();
   final _direccionCtrl = TextEditingController();
@@ -24,11 +30,91 @@ class _PerfilScreenState extends State<PerfilScreen> {
   final _cbuCtrl = TextEditingController();
   final _cuitCtrl = TextEditingController();
   double _radioEntrega = 5;
+  double? _lat;
+  double? _lng;
+  String? _logoUrl;
+  String? _bannerUrl;
+  bool _subiendoImagen = false;
 
   @override
   void initState() {
     super.initState();
     _cargarPerfil();
+    _cargarEstadoMp();
+  }
+
+  Future<void> _cargarEstadoMp() async {
+    final res = await ApiService.get('/comercio/mercadopago/estado');
+    if (mounted && res['status'] == 200) setState(() => _mpConectado = res['data']?['conectado'] == true);
+  }
+
+  Future<void> _conectarMercadoPago() async {
+    setState(() => _conectandoMp = true);
+    final res = await ApiService.get('/comercio/mercadopago/conectar');
+    if (!mounted) return;
+    setState(() => _conectandoMp = false);
+    final url = res['data']?['url'];
+    if (res['status'] == 200 && url != null) {
+      await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Completá la autorización en la pestaña que se abrió y volvé acá'),
+        ));
+      }
+    } else {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No se pudo iniciar la conexión con Mercado Pago'), backgroundColor: Colors.red));
+    }
+  }
+
+  // Sube logo o banner del comercio. Como no hay un servicio de almacenamiento de imágenes
+  // conectado (S3/Cloudinary/etc), la imagen se manda como base64 (data URL) directo al campo
+  // logo_url/banner_url — funciona bien para fotos chicas/medianas, igual que se hizo con las
+  // fotos de reclamos. Si más adelante se conecta un storage real, solo hay que cambiar esta
+  // función para subir el archivo ahí y guardar la URL en vez del base64 completo.
+  Future<void> _cambiarImagen(bool esLogo) async {
+    final picker = ImagePicker();
+    final archivo = await picker.pickImage(source: ImageSource.gallery, maxWidth: esLogo ? 400 : 1200, imageQuality: 80);
+    if (archivo == null) return;
+    setState(() => _subiendoImagen = true);
+    final bytes = await archivo.readAsBytes();
+    final base64Str = 'data:image/jpeg;base64,${base64Encode(bytes)}';
+
+    final ok = await ApiService.actualizarComercio({
+      esLogo ? 'logo_url' : 'banner_url': base64Str,
+    });
+    if (!mounted) return;
+    setState(() {
+      _subiendoImagen = false;
+      if (ok) { if (esLogo) _logoUrl = base64Str; else _bannerUrl = base64Str; }
+    });
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(ok ? '${esLogo ? 'Logo' : 'Banner'} actualizado ✓' : 'Error al subir la imagen'),
+      backgroundColor: ok ? Colors.green : Colors.red,
+    ));
+  }
+
+  // NetworkImage no soporta URLs "data:" (base64) — si la imagen viene recién subida usamos
+  // MemoryImage decodificando el base64, si es una URL http normal usamos NetworkImage.
+  ImageProvider _imagenDesde(String url) {
+    if (url.startsWith('data:')) {
+      final base64Str = url.split(',').last;
+      return MemoryImage(base64Decode(base64Str));
+    }
+    return NetworkImage(url);
+  }
+
+  Widget _botonCambiarFoto(VoidCallback onTap, {bool pequeno = false}) {
+    return GestureDetector(
+      onTap: _subiendoImagen ? null : onTap,
+      child: Container(
+        width: pequeno ? 24 : 32, height: pequeno ? 24 : 32,
+        decoration: const BoxDecoration(color: kNaranja, shape: BoxShape.circle),
+        child: _subiendoImagen
+          ? const Padding(padding: EdgeInsets.all(4), child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+          : Icon(Icons.camera_alt, color: Colors.white, size: pequeno ? 13 : 16),
+      ),
+    );
   }
 
   @override
@@ -53,6 +139,10 @@ class _PerfilScreenState extends State<PerfilScreen> {
           _telefonoCtrl.text = comercio['telefono'] ?? '';
           _cbuCtrl.text = comercio['cbu_alias'] ?? '';
           _cuitCtrl.text = comercio['cuit'] ?? '';
+          _lat = double.tryParse(comercio['lat']?.toString() ?? '');
+          _lng = double.tryParse(comercio['lng']?.toString() ?? '');
+          _logoUrl = comercio['logo_url'];
+          _bannerUrl = comercio['banner_url'];
           final radio = comercio['radio_entrega_km'];
           if (radio != null) {
             _radioEntrega = double.tryParse(radio.toString()) ?? 5;
@@ -81,6 +171,8 @@ class _PerfilScreenState extends State<PerfilScreen> {
     final ok = await ApiService.actualizarComercio({
       'nombre': _nombreCtrl.text.trim(),
       'direccion': _direccionCtrl.text.trim(),
+      'lat': _lat,
+      'lng': _lng,
       'telefono': _telefonoCtrl.text.trim(),
       'cbu_alias': _cbuCtrl.text.trim(),
       'cuit': _cuitCtrl.text.trim(),
@@ -229,6 +321,34 @@ class _PerfilScreenState extends State<PerfilScreen> {
                           'Datos del comercio',
                           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: kAzul),
                         ),
+                        const SizedBox(height: 12),
+                        // Banner
+                        Stack(alignment: Alignment.center, children: [
+                          Container(
+                            width: double.infinity, height: 100,
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade100, borderRadius: BorderRadius.circular(10),
+                              image: _bannerUrl != null && _bannerUrl!.isNotEmpty
+                                ? DecorationImage(image: _imagenDesde(_bannerUrl!), fit: BoxFit.cover) : null,
+                            ),
+                            child: _bannerUrl == null || _bannerUrl!.isEmpty ? const Icon(Icons.image_outlined, color: Colors.grey, size: 32) : null,
+                          ),
+                          Positioned(bottom: 6, right: 6, child: _botonCambiarFoto(() => _cambiarImagen(false))),
+                        ]),
+                        const SizedBox(height: 10),
+                        // Logo
+                        Row(children: [
+                          Stack(alignment: Alignment.center, children: [
+                            CircleAvatar(
+                              radius: 30, backgroundColor: Colors.grey.shade100,
+                              backgroundImage: _logoUrl != null && _logoUrl!.isNotEmpty ? _imagenDesde(_logoUrl!) : null,
+                              child: _logoUrl == null || _logoUrl!.isEmpty ? const Icon(Icons.store, color: Colors.grey) : null,
+                            ),
+                            Positioned(bottom: -2, right: -2, child: _botonCambiarFoto(() => _cambiarImagen(true), pequeno: true)),
+                          ]),
+                          const SizedBox(width: 12),
+                          const Expanded(child: Text('Tocá el ícono de la cámara para cambiar el logo o el banner de tu local.', style: TextStyle(fontSize: 12, color: Colors.grey))),
+                        ]),
                         const SizedBox(height: 16),
                         TextField(
                           controller: _nombreCtrl,
@@ -245,6 +365,30 @@ class _PerfilScreenState extends State<PerfilScreen> {
                             labelText: 'Dirección',
                             border: OutlineInputBorder(),
                             prefixIcon: Icon(Icons.location_on),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        OutlinedButton.icon(
+                          onPressed: () async {
+                            final resultado = await Navigator.push<Map<String, dynamic>>(context, MaterialPageRoute(
+                              builder: (_) => MapaConfirmarUbicacionScreen(
+                                direccionInicial: _direccionCtrl.text.trim(),
+                                latInicial: _lat, lngInicial: _lng,
+                              ),
+                            ));
+                            if (resultado == null || !mounted) return;
+                            setState(() {
+                              _lat = resultado['lat'];
+                              _lng = resultado['lng'];
+                              if ((resultado['direccion'] as String).isNotEmpty) _direccionCtrl.text = resultado['direccion'];
+                            });
+                          },
+                          icon: Icon(_lat != null ? Icons.check_circle : Icons.map_outlined, color: _lat != null ? Colors.green : kNaranja),
+                          label: Text(_lat != null ? 'Ubicación confirmada en el mapa ✓ (tocá para ajustar)' : 'Confirmar ubicación en el mapa',
+                            style: TextStyle(color: _lat != null ? Colors.green : kNaranja)),
+                          style: OutlinedButton.styleFrom(
+                            side: BorderSide(color: _lat != null ? Colors.green : kNaranja),
+                            minimumSize: const Size.fromHeight(44),
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -366,6 +510,38 @@ class _PerfilScreenState extends State<PerfilScreen> {
                         ),
                       ],
                     ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Cobros con Mercado Pago
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      const Text('Cobros con Mercado Pago', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: kAzul)),
+                      const SizedBox(height: 8),
+                      if (_mpConectado == true) ...[
+                        const Row(children: [
+                          Icon(Icons.check_circle, color: Colors.green, size: 18),
+                          SizedBox(width: 8),
+                          Expanded(child: Text('Cuenta conectada. Tus ventas se depositan directo en tu Mercado Pago (se descuenta la comisión de la plataforma automáticamente).', style: TextStyle(fontSize: 13))),
+                        ]),
+                      ] else ...[
+                        const Text('Conectá tu cuenta de Mercado Pago para que el dinero de cada venta te llegue directo, sin esperar una transferencia manual.',
+                          style: TextStyle(fontSize: 13, color: Colors.grey)),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            onPressed: _conectandoMp ? null : _conectarMercadoPago,
+                            icon: const Icon(Icons.account_balance_wallet_outlined),
+                            label: Text(_conectandoMp ? 'Abriendo...' : 'Conectar con Mercado Pago'),
+                            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF009EE3), foregroundColor: Colors.white, minimumSize: const Size.fromHeight(46)),
+                          ),
+                        ),
+                      ],
+                    ]),
                   ),
                 ),
                 const SizedBox(height: 16),

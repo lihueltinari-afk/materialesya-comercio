@@ -1,13 +1,25 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show VoidCallback;
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
-  static const String _prod = 'https://materialesya-backend-production.up.railway.app/api';
-  static String get _base => kIsWeb ? _prod : 'http://10.0.2.2:3000/api';
+  // TODO: volver a la URL de Railway antes de compilar para producción.
+  static const String _base = 'http://10.0.2.2:3000/api'; // localhost del emulador Android
 
-  // ── Token y sesión ──────────────────────────────────────────────────────────
+  static VoidCallback? onSesionExpirada;
+  static bool _sesionExpirandose = false;
+
+  static Future<void> _manejarUnauthorized() async {
+    if (_sesionExpirandose) return;
+    _sesionExpirandose = true;
+    await cerrarSesion();
+    onSesionExpirada?.call();
+    Future.delayed(const Duration(seconds: 3), () => _sesionExpirandose = false);
+  }
+
+  // ─── TOKEN Y SESIÓN ───────────────────────────────────────────────────────────
+
   static Future<void> guardarToken(String token) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('token_comercio', token);
@@ -18,22 +30,34 @@ class ApiService {
     return prefs.getString('token_comercio');
   }
 
-  static Future<void> guardarComercioId(int id) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('comercio_id', id);
-  }
-
-  static Future<int?> obtenerComercioId() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getInt('comercio_id');
-  }
-
   static Future<void> cerrarSesion() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('token_comercio');
-    await prefs.remove('usuario_comercio');
-    await prefs.remove('comercio_id');
+    await prefs.remove('comercio');
   }
+
+  // ─── COMERCIO LOCAL ──────────────────────────────────────────────────────────
+
+  static Future<Map<String, dynamic>?> comercioActual() async {
+    final prefs = await SharedPreferences.getInstance();
+    final str = prefs.getString('comercio');
+    if (str == null) return null;
+    return jsonDecode(str);
+  }
+
+  static Future<int?> obtenerComercioId() async {
+    final c = await comercioActual();
+    final id = c?['id'];
+    if (id == null) return null;
+    return id is int ? id : int.tryParse(id.toString());
+  }
+
+  static Future<void> guardarComercio(Map<String, dynamic> data) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('comercio', jsonEncode(data));
+  }
+
+  // ─── HEADERS ─────────────────────────────────────────────────────────────────
 
   static Future<Map<String, String>> _headers({bool auth = false}) async {
     final h = {'Content-Type': 'application/json'};
@@ -44,104 +68,251 @@ class ApiService {
     return h;
   }
 
-  // ── Auth ────────────────────────────────────────────────────────────────────
+  // ─── HTTP BASE ────────────────────────────────────────────────────────────────
+
   static Future<Map<String, dynamic>> login(String email, String password) async {
-    final res = await http.post(
-      Uri.parse('$_base/auth/login'),
-      headers: await _headers(),
-      body: jsonEncode({'email': email, 'password': password}),
-    );
-    final data = jsonDecode(res.body);
-    if (res.statusCode == 200) {
-      await guardarToken(data['token']);
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('usuario_comercio', jsonEncode(data['usuario']));
+    try {
+      final res = await http.post(
+        Uri.parse('$_base/auth/login'),
+        headers: await _headers(),
+        body: jsonEncode({'email': email, 'password': password}),
+      ).timeout(const Duration(seconds: 15));
+      final data = jsonDecode(res.body);
+      if (res.statusCode == 200) {
+        await guardarToken(data['token']);
+        if (data['comercio'] != null) await guardarComercio(data['comercio']);
+      }
+      return {'status': res.statusCode, 'data': data};
+    } catch (e) {
+      return {'status': 0, 'error': e.toString()};
     }
-    return {'status': res.statusCode, 'data': data};
   }
 
-  // ── Mi comercio ─────────────────────────────────────────────────────────────
+  static Future<Map<String, dynamic>> get(String path) async {
+    try {
+      final res = await http.get(
+        Uri.parse('$_base$path'),
+        headers: await _headers(auth: true),
+      ).timeout(const Duration(seconds: 15));
+      if (res.statusCode == 401) { await _manejarUnauthorized(); return {'status': 401}; }
+      return {'status': res.statusCode, 'data': jsonDecode(res.body)};
+    } catch (e) {
+      return {'status': 0, 'error': e.toString()};
+    }
+  }
+
+  static Future<Map<String, dynamic>> post(String path, Map<String, dynamic> body) async {
+    try {
+      final res = await http.post(
+        Uri.parse('$_base$path'),
+        headers: await _headers(auth: true),
+        body: jsonEncode(body),
+      ).timeout(const Duration(seconds: 15));
+      if (res.statusCode == 401) { await _manejarUnauthorized(); return {'status': 401}; }
+      return {'status': res.statusCode, 'data': jsonDecode(res.body)};
+    } catch (e) {
+      return {'status': 0, 'error': e.toString()};
+    }
+  }
+
+  static Future<Map<String, dynamic>> patch(String path, Map<String, dynamic> body) async {
+    try {
+      final res = await http.patch(
+        Uri.parse('$_base$path'),
+        headers: await _headers(auth: true),
+        body: jsonEncode(body),
+      ).timeout(const Duration(seconds: 15));
+      if (res.statusCode == 401) { await _manejarUnauthorized(); return {'status': 401}; }
+      return {'status': res.statusCode, 'data': jsonDecode(res.body)};
+    } catch (e) {
+      return {'status': 0, 'error': e.toString()};
+    }
+  }
+
+  static Future<Map<String, dynamic>> put(String path, Map<String, dynamic> body) async {
+    try {
+      final res = await http.put(
+        Uri.parse('$_base$path'),
+        headers: await _headers(auth: true),
+        body: jsonEncode(body),
+      ).timeout(const Duration(seconds: 15));
+      if (res.statusCode == 401) { await _manejarUnauthorized(); return {'status': 401}; }
+      return {'status': res.statusCode, 'data': jsonDecode(res.body)};
+    } catch (e) {
+      return {'status': 0, 'error': e.toString()};
+    }
+  }
+
+  static Future<Map<String, dynamic>> delete(String path) async {
+    try {
+      final res = await http.delete(
+        Uri.parse('$_base$path'),
+        headers: await _headers(auth: true),
+      ).timeout(const Duration(seconds: 15));
+      if (res.statusCode == 401) { await _manejarUnauthorized(); return {'status': 401}; }
+      return {'status': res.statusCode, 'data': res.body.isNotEmpty ? jsonDecode(res.body) : {}};
+    } catch (e) {
+      return {'status': 0, 'error': e.toString()};
+    }
+  }
+
+  // ─── MÉTODOS DE DOMINIO ───────────────────────────────────────────────────────
+
+  /// Carga los datos del comercio desde el backend y los guarda localmente.
   static Future<Map<String, dynamic>?> miComercio() async {
-    final res = await http.get(
-      Uri.parse('$_base/comercio/mi-comercio'),
-      headers: await _headers(auth: true),
-    );
-    if (res.statusCode == 200) {
-      final data = jsonDecode(res.body);
-      await guardarComercioId(data['id'] as int);
-      return data;
+    final res = await get('/comercio/mi-comercio');
+    if (res['status'] == 200) {
+      final data = res['data'];
+      final comercio = data['comercio'] ?? data;
+      await guardarComercio(comercio);
+      return comercio;
     }
     return null;
   }
 
+  /// Actualiza el estado abierto/cerrado del comercio.
   static Future<bool> actualizarAbierto(int comercioId, bool abierto) async {
-    final res = await http.patch(
-      Uri.parse('$_base/comercio/$comercioId'),
-      headers: await _headers(auth: true),
-      body: jsonEncode({'abierto': abierto}),
-    );
-    return res.statusCode == 200;
+    final res = await patch('/comercio/toggle-abierto', {'abierto': abierto});
+    return res['status'] == 200;
   }
 
-  // ── Pedidos del comercio ────────────────────────────────────────────────────
+  /// Cambia el estado de un pedido (aceptado, preparando, listo, entregado, cancelado).
+  static Future<bool> cambiarEstadoPedido(int pedidoId, String nuevoEstado) async {
+    final Map<String, String> rutas = {
+      'aceptado': '/comercio/pedidos/$pedidoId/aceptar',
+      'cancelado': '/comercio/pedidos/$pedidoId/rechazar',
+      'listo_para_retirar': '/comercio/pedidos/$pedidoId/listo',
+      'listo': '/comercio/pedidos/$pedidoId/listo',
+      'en_camino': '/comercio/pedidos/$pedidoId/en-camino',
+      'entregado': '/comercio/pedidos/$pedidoId/entregado',
+      'preparando': '/comercio/pedidos/$pedidoId/aceptar',
+      'confirmado': '/comercio/pedidos/$pedidoId/aceptar',
+    };
+    final ruta = rutas[nuevoEstado] ?? '/comercio/pedidos/$pedidoId/estado';
+    final res = await patch(ruta, {'estado': nuevoEstado});
+    return res['status'] == 200;
+  }
+
+  /// Devuelve todos los pedidos del comercio (activos por defecto).
   static Future<List<dynamic>> pedidosDelComercio(int comercioId, {String? estado}) async {
-    String url = '$_base/comercio/$comercioId/pedidos';
-    if (estado != null) url += '?estado=$estado';
-    final res = await http.get(Uri.parse(url), headers: await _headers(auth: true));
-    if (res.statusCode == 200) return jsonDecode(res.body);
+    final query = estado != null ? '?estado=$estado' : '';
+    final res = await get('/comercio/pedidos$query');
+    if (res['status'] == 200) {
+      final data = res['data'];
+      return data['pedidos'] ?? data ?? [];
+    }
     return [];
   }
 
-  static Future<bool> cambiarEstadoPedido(int pedidoId, String estado) async {
-    final res = await http.patch(
-      Uri.parse('$_base/pedidos/$pedidoId/estado'),
-      headers: await _headers(auth: true),
-      body: jsonEncode({'estado': estado}),
-    );
-    return res.statusCode == 200;
-  }
-
-  // ── Catálogo ────────────────────────────────────────────────────────────────
-  static Future<List<dynamic>> buscarCatalogo({String? busqueda, int? categoriaId}) async {
-    String url = '$_base/productos?limit=50';
-    if (categoriaId != null) url += '&categoria_id=$categoriaId';
-    if (busqueda != null && busqueda.isNotEmpty) url += '&busqueda=${Uri.encodeComponent(busqueda)}';
-    final res = await http.get(Uri.parse(url), headers: await _headers(auth: true));
-    if (res.statusCode == 200) return jsonDecode(res.body);
+  /// Busca productos en el catálogo maestro.
+  static Future<List<dynamic>> buscarCatalogo({String busqueda = '', int? categoriaId}) async {
+    var query = '?';
+    if (busqueda.isNotEmpty) query += 'busqueda=${Uri.encodeComponent(busqueda)}&';
+    if (categoriaId != null) query += 'categoria_id=$categoriaId&';
+    final res = await get('/catalogo-maestro$query');
+    if (res['status'] == 200) {
+      final data = res['data'];
+      return data['productos'] ?? data ?? [];
+    }
     return [];
   }
 
+  /// Obtiene las categorías del catálogo.
   static Future<List<dynamic>> obtenerCategorias() async {
-    final res = await http.get(Uri.parse('$_base/productos/categorias'), headers: await _headers());
-    if (res.statusCode == 200) return jsonDecode(res.body);
+    final res = await get('/catalogo-maestro/categorias');
+    if (res['status'] == 200) {
+      final data = res['data'];
+      return data['categorias'] ?? data ?? [];
+    }
     return [];
   }
 
-  // ── Productos del comercio ──────────────────────────────────────────────────
-  static Future<List<dynamic>> misProductos(int comercioId) async {
-    final res = await http.get(
-      Uri.parse('$_base/comercio/$comercioId/productos'),
-      headers: await _headers(auth: true),
-    );
-    if (res.statusCode == 200) return jsonDecode(res.body);
+  /// Activa un producto del catálogo maestro en el comercio.
+  static Future<bool> activarProducto(int comercioId, int productoMaestroId, double precio, int stock) async {
+    final res = await post('/comercio/productos', {
+      'producto_maestro_id': productoMaestroId,
+      'precio': precio,
+      'stock': stock,
+    });
+    return res['status'] == 200 || res['status'] == 201;
+  }
+
+  /// Obtiene los productos activos del comercio.
+  static Future<List<dynamic>> misProductos() async {
+    final res = await get('/comercio/mis-productos');
+    if (res['status'] == 200) {
+      final data = res['data'];
+      return data['productos'] ?? data ?? [];
+    }
     return [];
   }
 
-  static Future<bool> activarProducto(int comercioId, int productoId, double precio, int stock) async {
-    final res = await http.post(
-      Uri.parse('$_base/comercio/$comercioId/productos'),
-      headers: await _headers(auth: true),
-      body: jsonEncode({'producto_id': productoId, 'precio': precio, 'stock': stock}),
-    );
-    return res.statusCode == 201;
+  /// Actualiza el precio de un producto del comercio.
+  static Future<bool> actualizarPrecioProducto(int productoId, double precio) async {
+    final res = await patch('/comercio/productos/$productoId', {'precio': precio});
+    return res['status'] == 200;
   }
 
-  static Future<bool> actualizarProducto(int comercioId, int productoId, double precio, int stock) async {
-    final res = await http.patch(
-      Uri.parse('$_base/comercio/$comercioId/productos/$productoId'),
-      headers: await _headers(auth: true),
-      body: jsonEncode({'precio': precio, 'stock': stock}),
-    );
-    return res.statusCode == 200;
+  /// Activa o desactiva un producto del comercio.
+  static Future<bool> toggleProductoActivo(int productoId, bool activo) async {
+    final res = await patch('/comercio/productos/$productoId', {'activo': activo});
+    return res['status'] == 200;
+  }
+
+  /// Obtiene el detalle completo de un pedido.
+  static Future<Map<String, dynamic>?> detallePedido(int pedidoId) async {
+    final res = await get('/comercio/pedidos/$pedidoId');
+    if (res['status'] == 200) {
+      final data = res['data'];
+      return data['pedido'] ?? data;
+    }
+    return null;
+  }
+
+  /// Acepta un pedido con tiempo estimado.
+  static Future<bool> aceptarPedido(int pedidoId, int tiempoEstimadoMin) async {
+    final res = await patch('/comercio/pedidos/$pedidoId/aceptar', {
+      'tiempo_estimado_min': tiempoEstimadoMin,
+    });
+    return res['status'] == 200;
+  }
+
+  /// Rechaza un pedido con motivo.
+  static Future<bool> rechazarPedido(int pedidoId, String motivo) async {
+    final res = await patch('/comercio/pedidos/$pedidoId/rechazar', {
+      'motivo': motivo,
+    });
+    return res['status'] == 200;
+  }
+
+  /// Marca un pedido como listo para retirar.
+  static Future<bool> pedidoListo(int pedidoId) async {
+    final res = await patch('/comercio/pedidos/$pedidoId/listo', {});
+    return res['status'] == 200;
+  }
+
+  /// Devuelve estadísticas del día.
+  static Future<Map<String, dynamic>?> estadisticasHoy() async {
+    final res = await get('/comercio/estadisticas/hoy');
+    if (res['status'] == 200) return res['data'];
+    return null;
+  }
+
+  /// Actualiza el perfil del comercio.
+  static Future<bool> actualizarComercio(Map<String, dynamic> datos) async {
+    final res = await patch('/comercio/mi-comercio', datos);
+    if (res['status'] == 200) {
+      final data = res['data'];
+      final comercio = data['comercio'] ?? data;
+      await guardarComercio(comercio);
+      return true;
+    }
+    return false;
+  }
+
+  /// Cuenta pedidos pendientes (para badges).
+  static Future<int> contarPedidosPendientes() async {
+    final pedidos = await pedidosDelComercio(0, estado: 'pendiente');
+    return pedidos.length;
   }
 }

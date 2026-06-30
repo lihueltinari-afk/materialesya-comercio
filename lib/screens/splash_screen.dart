@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import 'login_screen.dart';
-import 'home_screen.dart';
+import 'main_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -31,14 +31,14 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
       final comercioId = await ApiService.obtenerComercioId();
       if (!mounted) return;
       if (comercioId != null) {
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomeScreen()));
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const MainScreen()));
         return;
       }
       // Token pero sin comercioId — intentar cargar
       final comercio = await ApiService.miComercio();
       if (!mounted) return;
       if (comercio != null) {
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomeScreen()));
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const MainScreen()));
         return;
       }
     }

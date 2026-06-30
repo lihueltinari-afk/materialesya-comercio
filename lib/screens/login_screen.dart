@@ -1,125 +1,111 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
-import 'home_screen.dart';
-
-const _amber = Color(0xFFE07B00);
-const _bgPage = Color(0xFFF5F5F3);
-const _textDark = Color(0xFF1A1A1A);
+import '../theme.dart';
+import 'registro_screen.dart';
+import 'main_screen.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+  final bool sesionExpirada;
+  const LoginScreen({super.key, this.sesionExpirada = false});
+
   @override
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
 class _LoginScreenState extends State<LoginScreen> {
   final _emailCtrl = TextEditingController();
-  final _passCtrl = TextEditingController();
-  bool _verPass = false;
+  final _passCtrl  = TextEditingController();
   bool _cargando = false;
-  String? _error;
+  bool _verPass  = false;
 
-  Future<void> _login() async {
-    if (_emailCtrl.text.isEmpty || _passCtrl.text.isEmpty) {
-      setState(() => _error = 'Completá todos los campos');
-      return;
+  @override
+  void initState() {
+    super.initState();
+    if (widget.sesionExpirada) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Tu sesión expiró, ingresá de nuevo.'), backgroundColor: Colors.red),
+        );
+      });
     }
-    setState(() { _cargando = true; _error = null; });
-    try {
-      final res = await ApiService.login(_emailCtrl.text.trim(), _passCtrl.text);
-      if (res['status'] == 200) {
-        final usuario = res['data']['usuario'];
-        if (usuario['rol'] != 'comercio') {
-          setState(() { _error = 'Esta app es solo para comercios'; _cargando = false; });
-          return;
-        }
-        // Cargar y guardar el comercio_id
-        final comercio = await ApiService.miComercio();
-        if (!mounted) return;
-        if (comercio == null) {
-          setState(() { _error = 'No encontramos tu comercio registrado'; _cargando = false; });
-          return;
-        }
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomeScreen()));
-      } else {
-        setState(() => _error = res['data']['error'] ?? 'Error al ingresar');
+  }
+
+  Future<void> _ingresar() async {
+    final email = _emailCtrl.text.trim();
+    final pass  = _passCtrl.text.trim();
+    if (email.isEmpty || pass.isEmpty) return;
+    setState(() => _cargando = true);
+    final res = await ApiService.login(email, pass);
+    setState(() => _cargando = false);
+    if (!mounted) return;
+
+    if (res['status'] == 200) {
+      final data = res['data'];
+      if (data['usuario']?['rol'] != 'comercio') {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Esta app es solo para comercios.'), backgroundColor: Colors.red),
+        );
+        await ApiService.cerrarSesion();
+        return;
       }
-    } catch (_) {
-      setState(() => _error = 'No se pudo conectar al servidor');
-    } finally {
-      if (mounted) setState(() => _cargando = false);
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const MainScreen()));
+    } else {
+      final msg = res['data']?['error'] ?? 'Error de conexión';
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg), backgroundColor: Colors.red));
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _bgPage,
+      backgroundColor: kFondo,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const SizedBox(height: 40),
-            Row(children: [
-              Container(width: 44, height: 44, decoration: BoxDecoration(color: _amber, borderRadius: BorderRadius.circular(10)),
-                child: const Icon(Icons.store, color: Colors.white, size: 24)),
-              const SizedBox(width: 10),
-              RichText(text: const TextSpan(
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: _textDark, letterSpacing: -0.5),
-                children: [TextSpan(text: 'Materiales'), TextSpan(text: 'Ya', style: TextStyle(color: _amber)), TextSpan(text: ' Comercio')],
-              )),
-            ]),
+          padding: const EdgeInsets.all(28),
+          child: Column(children: [
             const SizedBox(height: 48),
-            const Text('Ingresá a tu cuenta', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: _textDark, letterSpacing: -0.5)),
-            const SizedBox(height: 4),
-            const Text('Gestioná tu corralón desde acá', style: TextStyle(fontSize: 14, color: Colors.grey)),
-            const SizedBox(height: 32),
-            const Text('Email', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: _textDark)),
-            const SizedBox(height: 6),
+            Container(
+              width: 80, height: 80,
+              decoration: BoxDecoration(color: kNaranja, borderRadius: BorderRadius.circular(20)),
+              child: const Icon(Icons.store, size: 44, color: Colors.white),
+            ),
+            const SizedBox(height: 20),
+            const Text('MaterialesYa', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: kAzul)),
+            const Text('Panel del Comercio', style: TextStyle(fontSize: 14, color: Colors.grey)),
+            const SizedBox(height: 40),
             TextField(
               controller: _emailCtrl,
               keyboardType: TextInputType.emailAddress,
-              decoration: InputDecoration(
-                hintText: 'tucorreo@email.com',
-                prefixIcon: const Icon(Icons.email_outlined),
-                filled: true, fillColor: Colors.white,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade200)),
-                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade200)),
-              ),
+              decoration: const InputDecoration(labelText: 'Email', prefixIcon: Icon(Icons.email_outlined)),
             ),
             const SizedBox(height: 16),
-            const Text('Contraseña', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: _textDark)),
-            const SizedBox(height: 6),
             TextField(
               controller: _passCtrl,
               obscureText: !_verPass,
+              onSubmitted: (_) => _ingresar(),
               decoration: InputDecoration(
-                hintText: '••••••••',
+                labelText: 'Contraseña',
                 prefixIcon: const Icon(Icons.lock_outline),
-                suffixIcon: IconButton(icon: Icon(_verPass ? Icons.visibility_off_outlined : Icons.visibility_outlined), onPressed: () => setState(() => _verPass = !_verPass)),
-                filled: true, fillColor: Colors.white,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade200)),
-                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade200)),
+                suffixIcon: IconButton(
+                  icon: Icon(_verPass ? Icons.visibility_off : Icons.visibility),
+                  onPressed: () => setState(() => _verPass = !_verPass),
+                ),
               ),
             ),
-            if (_error != null) ...[
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(color: Colors.red.shade50, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.red.shade200)),
-                child: Text(_error!, style: TextStyle(color: Colors.red.shade700, fontSize: 13)),
-              ),
-            ],
             const SizedBox(height: 24),
             SizedBox(
-              width: double.infinity, height: 52,
+              width: double.infinity,
               child: ElevatedButton(
-                onPressed: _cargando ? null : _login,
-                style: ElevatedButton.styleFrom(backgroundColor: _amber, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                onPressed: _cargando ? null : _ingresar,
                 child: _cargando
-                  ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                  : const Text('Ingresar', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                    ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    : const Text('Ingresar'),
               ),
+            ),
+            const SizedBox(height: 20),
+            TextButton(
+              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RegistroScreen())),
+              child: const Text('¿No tenés cuenta? Registrá tu comercio', style: TextStyle(color: kAzul)),
             ),
           ]),
         ),

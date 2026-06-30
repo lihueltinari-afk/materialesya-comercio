@@ -1,19 +1,40 @@
 import 'package:flutter/material.dart';
 import 'screens/splash_screen.dart';
+import 'screens/login_screen.dart';
+import 'screens/main_screen.dart';
+import 'services/api_service.dart';
+import 'theme.dart';
 
-void main() => runApp(const ComercioApp());
+void main() => runApp(const MaterialesYaComercioApp());
 
-class ComercioApp extends StatelessWidget {
-  const ComercioApp({super.key});
+class MaterialesYaComercioApp extends StatefulWidget {
+  const MaterialesYaComercioApp({super.key});
+
+  @override
+  State<MaterialesYaComercioApp> createState() => _MaterialesYaComercioAppState();
+}
+
+class _MaterialesYaComercioAppState extends State<MaterialesYaComercioApp> {
+  final _navKey = GlobalKey<NavigatorState>();
+
+  @override
+  void initState() {
+    super.initState();
+    ApiService.onSesionExpirada = () {
+      _navKey.currentState?.pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const LoginScreen(sesionExpirada: true)),
+        (_) => false,
+      );
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: _navKey,
       title: 'MaterialesYa Comercio',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFFE07B00), primary: const Color(0xFFE07B00)),
-        useMaterial3: true,
-      ),
+      theme: appTheme,
       home: const SplashScreen(),
     );
   }

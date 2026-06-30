@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../theme.dart';
+import '../soporte.dart';
+import '../legal_texts.dart';
 import 'login_screen.dart';
+import 'legal_screen.dart';
 
 class PerfilScreen extends StatefulWidget {
   const PerfilScreen({super.key});
@@ -364,6 +367,33 @@ class _PerfilScreenState extends State<PerfilScreen> {
                       ],
                     ),
                   ),
+                ),
+                const SizedBox(height: 16),
+
+                // Ayuda y legales
+                Card(
+                  child: Column(children: [
+                    ListTile(
+                      leading: const Icon(Icons.support_agent_outlined, color: kNaranja),
+                      title: const Text('Ayuda / Soporte'),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () => abrirSoporteWhatsApp(),
+                    ),
+                    const Divider(height: 1),
+                    ListTile(
+                      leading: const Icon(Icons.description_outlined, color: kNaranja),
+                      title: const Text('Términos y condiciones'),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LegalScreen(titulo: 'Términos y condiciones', texto: terminosComercio))),
+                    ),
+                    const Divider(height: 1),
+                    ListTile(
+                      leading: const Icon(Icons.privacy_tip_outlined, color: kNaranja),
+                      title: const Text('Política de privacidad'),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LegalScreen(titulo: 'Política de privacidad', texto: politicaPrivacidad))),
+                    ),
+                  ]),
                 ),
                 const SizedBox(height: 16),
 

@@ -14,6 +14,7 @@ class DetallePedidoScreen extends StatefulWidget {
 
 class _DetallePedidoScreenState extends State<DetallePedidoScreen> {
   Map<String, dynamic>? _pedido;
+  Map<String, dynamic>? _reclamo;
   bool _cargando = true;
   bool _procesando = false;
   Timer? _timer;
@@ -22,7 +23,51 @@ class _DetallePedidoScreenState extends State<DetallePedidoScreen> {
   void initState() {
     super.initState();
     _cargarPedido();
+    _cargarReclamo();
     _timer = Timer.periodic(const Duration(seconds: 10), (_) => _cargarPedido());
+  }
+
+  Future<void> _cargarReclamo() async {
+    final res = await ApiService.get('/comercio/reclamos');
+    if (!mounted || res['status'] != 200 || res['data'] is! List) return;
+    final lista = (res['data'] as List).cast<Map>();
+    final encontrado = lista.where((r) => r['pedido_id'] == widget.pedidoId);
+    if (encontrado.isNotEmpty) setState(() => _reclamo = Map<String, dynamic>.from(encontrado.first));
+  }
+
+  Future<void> _responderReclamo(bool aceptar) async {
+    final respuestaCtrl = TextEditingController();
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(aceptar ? 'Aceptar reclamo' : 'Rechazar reclamo'),
+        content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Text('Escribí tu respuesta para el cliente:'),
+          const SizedBox(height: 12),
+          TextField(controller: respuestaCtrl, maxLines: 3, decoration: const InputDecoration(border: OutlineInputBorder())),
+        ]),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: aceptar ? Colors.green : Colors.red, foregroundColor: Colors.white),
+            child: const Text('Enviar'),
+          ),
+        ],
+      ),
+    );
+    if (confirmar != true || !mounted) return;
+    final res = await ApiService.patch('/comercio/reclamos/${_reclamo!['id']}/responder', {
+      'respuesta': respuestaCtrl.text.trim(),
+      'aceptar': aceptar,
+    });
+    if (!mounted) return;
+    if (res['status'] == 200) {
+      setState(() => _reclamo = Map<String, dynamic>.from(res['data']));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Respuesta enviada'), backgroundColor: Colors.green));
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Error al responder el reclamo'), backgroundColor: Colors.red));
+    }
   }
 
   @override
@@ -335,6 +380,59 @@ class _DetallePedidoScreenState extends State<DetallePedidoScreen> {
                 ),
               ),
             ),
+
+          if (_reclamo != null)
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Row(children: [
+                    const Icon(Icons.report_problem_outlined, color: Colors.red, size: 18),
+                    const SizedBox(width: 8),
+                    const Text('Reclamo del cliente', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: kAzul)),
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: _reclamo!['estado'] == 'resuelto' ? Colors.green.shade50 : _reclamo!['estado'] == 'rechazado' ? Colors.red.shade50 : Colors.orange.shade50,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        _reclamo!['estado'] == 'resuelto' ? 'Resuelto' : _reclamo!['estado'] == 'rechazado' ? 'Rechazado' : 'En revisión',
+                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
+                          color: _reclamo!['estado'] == 'resuelto' ? Colors.green : _reclamo!['estado'] == 'rechazado' ? Colors.red : Colors.orange),
+                      ),
+                    ),
+                  ]),
+                  const Divider(),
+                  Text('Tipo: ${_reclamo!['tipo']}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                  if ((_reclamo!['comentario'] ?? '').toString().isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Text(_reclamo!['comentario'].toString(), style: const TextStyle(fontSize: 13, color: Colors.grey)),
+                  ],
+                  if (_reclamo!['estado'] == 'en_revision') ...[
+                    const SizedBox(height: 14),
+                    Row(children: [
+                      Expanded(child: OutlinedButton(
+                        onPressed: () => _responderReclamo(false),
+                        style: OutlinedButton.styleFrom(foregroundColor: Colors.red, side: const BorderSide(color: Colors.red)),
+                        child: const Text('Rechazar'),
+                      )),
+                      const SizedBox(width: 8),
+                      Expanded(child: ElevatedButton(
+                        onPressed: () => _responderReclamo(true),
+                        style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
+                        child: const Text('Aceptar'),
+                      )),
+                    ]),
+                  ] else if ((_reclamo!['respuesta_comercio'] ?? '').toString().isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Text('Tu respuesta: ${_reclamo!['respuesta_comercio']}', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                  ],
+                ]),
+              ),
+            ),
+          if (_reclamo != null) const SizedBox(height: 12),
 
           const SizedBox(height: 16),
 

@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import '../services/api_service.dart';
 import '../theme.dart';
+import '../legal_texts.dart';
 import 'verificar_email_screen.dart';
+import 'legal_screen.dart';
 
 class RegistroScreen extends StatefulWidget {
   const RegistroScreen({super.key});
@@ -30,6 +33,7 @@ class _RegistroScreenState extends State<RegistroScreen> {
   final _emailCtrl = TextEditingController();
   final _passCtrl = TextEditingController();
   bool _verPassword = false;
+  bool _aceptaTerminos = false;
 
   final List<String> _tipos = [
     'corralon',
@@ -101,6 +105,10 @@ class _RegistroScreenState extends State<RegistroScreen> {
         }
         if (_passCtrl.text.length < 6) {
           _mostrarError('La contraseña debe tener al menos 6 caracteres');
+          return false;
+        }
+        if (!_aceptaTerminos) {
+          _mostrarError('Tenés que aceptar los Términos y la Política de Privacidad');
           return false;
         }
         return true;
@@ -396,6 +404,27 @@ class _RegistroScreenState extends State<RegistroScreen> {
             ),
           ),
         ),
+        const SizedBox(height: 16),
+        Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Checkbox(value: _aceptaTerminos, onChanged: (v) => setState(() => _aceptaTerminos = v ?? false)),
+          Expanded(child: Padding(
+            padding: const EdgeInsets.only(top: 12),
+            child: GestureDetector(
+              onTap: () => setState(() => _aceptaTerminos = !_aceptaTerminos),
+              child: RichText(text: TextSpan(
+                style: const TextStyle(fontSize: 12, color: kAzul),
+                children: [
+                  const TextSpan(text: 'Acepto los '),
+                  TextSpan(text: 'Términos y condiciones', style: const TextStyle(color: kNaranja, fontWeight: FontWeight.w700),
+                    recognizer: TapGestureRecognizer()..onTap = () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LegalScreen(titulo: 'Términos y condiciones', texto: terminosComercio)))),
+                  const TextSpan(text: ' y la '),
+                  TextSpan(text: 'Política de privacidad', style: const TextStyle(color: kNaranja, fontWeight: FontWeight.w700),
+                    recognizer: TapGestureRecognizer()..onTap = () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LegalScreen(titulo: 'Política de privacidad', texto: politicaPrivacidad)))),
+                ],
+              )),
+            ),
+          )),
+        ]),
       ],
     );
   }

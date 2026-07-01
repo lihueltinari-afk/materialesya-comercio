@@ -97,6 +97,15 @@ class _DetallePedidoScreenState extends State<DetallePedidoScreen> {
     }
   }
 
+  String _formatearFecha(String iso) {
+    try {
+      final dt = DateTime.parse(iso).toLocal();
+      final dias = ['lun', 'mar', 'mié', 'jue', 'vie', 'sáb', 'dom'];
+      final meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+      return '${dias[dt.weekday - 1]} ${dt.day} ${meses[dt.month - 1]} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')} hs';
+    } catch (_) { return iso; }
+  }
+
   Color _colorEstado(String estado) {
     switch (estado) {
       case 'pendiente':
@@ -299,25 +308,40 @@ class _DetallePedidoScreenState extends State<DetallePedidoScreen> {
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // Estado
+          // Estado + timestamps
           Card(
             child: Padding(
               padding: const EdgeInsets.all(16),
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Estado:', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
-                  const SizedBox(width: 12),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: color.withOpacity(0.12),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      _labelEstado(estado),
-                      style: TextStyle(fontWeight: FontWeight.bold, color: color, fontSize: 14),
-                    ),
+                  Row(
+                    children: [
+                      const Text('Estado:', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+                      const SizedBox(width: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: color.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          _labelEstado(estado),
+                          style: TextStyle(fontWeight: FontWeight.bold, color: color, fontSize: 14),
+                        ),
+                      ),
+                    ],
                   ),
+                  if (pedido['creado_en'] != null) ...[
+                    const SizedBox(height: 8),
+                    Text('Recibido: ${_formatearFecha(pedido['creado_en'].toString())}',
+                      style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                  ],
+                  if (pedido['actualizado_en'] != null && estado != 'pendiente') ...[
+                    const SizedBox(height: 2),
+                    Text('Última actualización: ${_formatearFecha(pedido['actualizado_en'].toString())}',
+                      style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                  ],
                 ],
               ),
             ),
@@ -562,7 +586,7 @@ class _DetallePedidoScreenState extends State<DetallePedidoScreen> {
                 minimumSize: const Size.fromHeight(50),
               ),
             ),
-          ] else if (estado == 'en_camino' && _repartoPropio) ...[
+          ] else if (estado == 'en_camino') ...[
             ElevatedButton.icon(
               onPressed: () => _cambiarEstadoRepartoPropio('entregado'),
               icon: const Icon(Icons.check_circle_outline),

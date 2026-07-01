@@ -153,7 +153,7 @@ class _MapaConfirmarUbicacionScreenState extends State<MapaConfirmarUbicacionScr
                 onTap: (_, point) => setState(() => _pin = point),
               ),
               children: [
-                TileLayer(urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', userAgentPackageName: 'com.materialesya.comercio'),
+                TileLayer(urlTemplate: 'https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png', userAgentPackageName: 'com.materialesya.comercio'),
                 MarkerLayer(markers: [
                   Marker(point: _pin, width: 44, height: 44, child: const Icon(Icons.location_pin, color: _amber, size: 44)),
                 ]),

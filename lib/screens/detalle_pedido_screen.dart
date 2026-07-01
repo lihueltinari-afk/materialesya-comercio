@@ -97,9 +97,14 @@ class _DetallePedidoScreenState extends State<DetallePedidoScreen> {
     }
   }
 
+  DateTime _parsearFecha(String iso) {
+    final s = (iso.contains('+') || iso.toUpperCase().endsWith('Z')) ? iso : '${iso}Z';
+    return DateTime.parse(s).toLocal();
+  }
+
   String _formatearFecha(String iso) {
     try {
-      final dt = DateTime.parse(iso).toLocal();
+      final dt = _parsearFecha(iso);
       final dias = ['lun', 'mar', 'mié', 'jue', 'vie', 'sáb', 'dom'];
       final meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
       return '${dias[dt.weekday - 1]} ${dt.day} ${meses[dt.month - 1]} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')} hs';

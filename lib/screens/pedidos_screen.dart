@@ -97,11 +97,17 @@ class _PedidosScreenState extends State<PedidosScreen> {
     return labels[estado] ?? estado;
   }
 
+  // El backend envía timestamps UTC sin sufijo Z → hay que forzar interpretación UTC
+  DateTime _parsearFecha(String iso) {
+    final s = (iso.contains('+') || iso.toUpperCase().endsWith('Z')) ? iso : '${iso}Z';
+    return DateTime.parse(s).toLocal();
+  }
+
   // Para pedidos pendientes: minutos y segundos restantes (límite 35 min para aceptar/rechazar).
   String? _tiempoRestanteParaAceptar(String? fechaStr) {
     if (fechaStr == null) return null;
     try {
-      final creado = DateTime.parse(fechaStr).toLocal();
+      final creado = _parsearFecha(fechaStr);
       final limite = creado.add(const Duration(minutes: 35));
       final restante = limite.difference(DateTime.now());
       if (restante.isNegative) return 'Vencido';
@@ -116,7 +122,7 @@ class _PedidosScreenState extends State<PedidosScreen> {
   String _horaExacta(String? fechaStr) {
     if (fechaStr == null) return '';
     try {
-      final fecha = DateTime.parse(fechaStr).toLocal();
+      final fecha = _parsearFecha(fechaStr);
       final h = fecha.hour.toString().padLeft(2, '0');
       final m = fecha.minute.toString().padLeft(2, '0');
       return '$h:$m';
@@ -128,7 +134,7 @@ class _PedidosScreenState extends State<PedidosScreen> {
   String _tiempoDesde(String? fechaStr) {
     if (fechaStr == null) return '';
     try {
-      final fecha = DateTime.parse(fechaStr).toLocal();
+      final fecha = _parsearFecha(fechaStr);
       final diff = DateTime.now().difference(fecha);
       if (diff.inMinutes < 60) return 'hace ${diff.inMinutes} min';
       if (diff.inHours < 24) return 'hace ${diff.inHours} h';

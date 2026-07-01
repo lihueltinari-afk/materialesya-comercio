@@ -198,7 +198,11 @@ class _PedidosScreenState extends State<PedidosScreen> {
           // Lista de pedidos
           Expanded(
             child: _cargando
-                ? const Center(child: CircularProgressIndicator(color: kNaranja))
+                ? ListView.builder(
+                    padding: const EdgeInsets.all(12),
+                    itemCount: 3,
+                    itemBuilder: (_, __) => _PedidoSkeleton(),
+                  )
                 : _pedidos.isEmpty
                     ? Center(
                         child: Column(
@@ -308,6 +312,51 @@ class _PedidosScreenState extends State<PedidosScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _PedidoSkeleton extends StatefulWidget {
+  @override
+  State<_PedidoSkeleton> createState() => _PedidoSkeletonState();
+}
+class _PedidoSkeletonState extends State<_PedidoSkeleton> with SingleTickerProviderStateMixin {
+  late AnimationController _ac;
+  late Animation<double> _anim;
+  @override
+  void initState() {
+    super.initState();
+    _ac = AnimationController(vsync: this, duration: const Duration(milliseconds: 1100))..repeat(reverse: true);
+    _anim = CurvedAnimation(parent: _ac, curve: Curves.easeInOut);
+  }
+  @override
+  void dispose() { _ac.dispose(); super.dispose(); }
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _anim,
+      builder: (_, __) {
+        final c1 = Color.lerp(Colors.grey.shade200, Colors.grey.shade100, _anim.value)!;
+        final c2 = Color.lerp(Colors.grey.shade300, Colors.grey.shade200, _anim.value)!;
+        return Container(
+          margin: const EdgeInsets.only(bottom: 10),
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14),
+            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 6)]),
+          child: Row(children: [
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Container(height: 13, width: 140, decoration: BoxDecoration(color: c2, borderRadius: BorderRadius.circular(6))),
+              const SizedBox(height: 8),
+              Container(height: 10, width: 100, decoration: BoxDecoration(color: c1, borderRadius: BorderRadius.circular(6))),
+            ])),
+            Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+              Container(width: 60, height: 22, decoration: BoxDecoration(color: c1, borderRadius: BorderRadius.circular(12))),
+              const SizedBox(height: 6),
+              Container(width: 50, height: 13, decoration: BoxDecoration(color: c1, borderRadius: BorderRadius.circular(6))),
+            ]),
+          ]),
+        );
+      },
     );
   }
 }

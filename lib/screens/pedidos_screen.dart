@@ -97,13 +97,12 @@ class _PedidosScreenState extends State<PedidosScreen> {
     return labels[estado] ?? estado;
   }
 
-  // Para pedidos pendientes: minutos y segundos restantes antes de que el backend lo
-  // cancele automáticamente por vencimiento (límite de 5 minutos para aceptar/rechazar).
+  // Para pedidos pendientes: minutos y segundos restantes (límite 35 min para aceptar/rechazar).
   String? _tiempoRestanteParaAceptar(String? fechaStr) {
     if (fechaStr == null) return null;
     try {
-      final creado = DateTime.parse(fechaStr);
-      final limite = creado.add(const Duration(minutes: 5));
+      final creado = DateTime.parse(fechaStr).toLocal();
+      final limite = creado.add(const Duration(minutes: 35));
       final restante = limite.difference(DateTime.now());
       if (restante.isNegative) return 'Vencido';
       final min = restante.inMinutes;
@@ -114,10 +113,22 @@ class _PedidosScreenState extends State<PedidosScreen> {
     }
   }
 
+  String _horaExacta(String? fechaStr) {
+    if (fechaStr == null) return '';
+    try {
+      final fecha = DateTime.parse(fechaStr).toLocal();
+      final h = fecha.hour.toString().padLeft(2, '0');
+      final m = fecha.minute.toString().padLeft(2, '0');
+      return '$h:$m';
+    } catch (_) {
+      return '';
+    }
+  }
+
   String _tiempoDesde(String? fechaStr) {
     if (fechaStr == null) return '';
     try {
-      final fecha = DateTime.parse(fechaStr);
+      final fecha = DateTime.parse(fechaStr).toLocal();
       final diff = DateTime.now().difference(fecha);
       if (diff.inMinutes < 60) return 'hace ${diff.inMinutes} min';
       if (diff.inHours < 24) return 'hace ${diff.inHours} h';
@@ -253,6 +264,9 @@ class _PedidosScreenState extends State<PedidosScreen> {
                       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                     ),
                     Text(clienteNombre, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                    if (_horaExacta(pedido['creado_en']?.toString()).isNotEmpty)
+                      Text(_horaExacta(pedido['creado_en']?.toString()),
+                        style: const TextStyle(color: Colors.grey, fontSize: 11, fontWeight: FontWeight.w600)),
                     if (estado == 'pendiente' && _tiempoRestanteParaAceptar(pedido['creado_en']?.toString()) != null)
                       Text('⏱ ${_tiempoRestanteParaAceptar(pedido['creado_en']?.toString())} para responder',
                         style: const TextStyle(color: Colors.deepOrange, fontSize: 11, fontWeight: FontWeight.w700))

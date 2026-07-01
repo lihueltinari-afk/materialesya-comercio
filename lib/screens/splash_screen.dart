@@ -3,6 +3,7 @@ import '../services/api_service.dart';
 import 'login_screen.dart';
 import 'main_screen.dart';
 import 'aceptar_terminos_screen.dart';
+import 'verificar_email_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -25,25 +26,40 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
 
   Future<void> _checkSession() async {
     if (!mounted) return;
+
     final aceptados = await terminosYaAceptados();
     final token = await ApiService.obtenerToken();
-    if (!mounted) return;
 
     Widget destino = const LoginScreen();
+
     if (token != null && token.isNotEmpty) {
-      // Token existe — verificar que el comercio también está guardado
-      final comercioId = await ApiService.obtenerComercioId();
-      if (!mounted) return;
-      if (comercioId != null) {
-        destino = const MainScreen();
+      // Verificar estado real del usuario en el servidor
+      final usuario = await ApiService.usuarioActualRemoto();
+
+      if (usuario == null) {
+        // Token inválido o expirado — limpiar sesión
+        await ApiService.cerrarSesion();
+        destino = const LoginScreen();
+      } else if (usuario['email_verificado'] == false) {
+        // Usuario con email sin verificar — llevarlo a verificar
+        final email = usuario['email'] as String? ?? await ApiService.obtenerEmailUsuario() ?? '';
+        destino = VerificarEmailScreen(email: email);
       } else {
-        // Token pero sin comercioId — intentar cargar
-        final comercio = await ApiService.miComercio();
+        // Sesión válida y email verificado — cargar comercio
+        final comercioId = await ApiService.obtenerComercioId();
         if (!mounted) return;
-        if (comercio != null) destino = const MainScreen();
+        if (comercioId != null) {
+          destino = const MainScreen();
+        } else {
+          // No hay comercio en caché, cargarlo del servidor
+          final comercio = await ApiService.miComercio();
+          if (!mounted) return;
+          destino = comercio != null ? const MainScreen() : const LoginScreen();
+        }
       }
     }
 
+    if (!mounted) return;
     if (aceptados) {
       Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => destino));
     } else {

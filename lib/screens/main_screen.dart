@@ -6,6 +6,7 @@ import 'home_screen.dart';
 import 'pedidos_screen.dart';
 import 'catalogo_screen.dart';
 import 'perfil_screen.dart';
+import '../widgets/reporte_error_button.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -43,6 +44,8 @@ class _MainScreenState extends State<MainScreen> {
     } catch (_) {}
   }
 
+  final List<String> _pantallaNames = const ['Inicio', 'Pedidos', 'Catálogo', 'Perfil'];
+
   final List<Widget> _pantallas = const [
     HomeScreen(),
     PedidosScreen(),
@@ -58,6 +61,11 @@ class _MainScreenState extends State<MainScreen> {
         children: _pantallas,
       ),
       bottomNavigationBar: _buildNavBar(),
+      floatingActionButton: ReporteErrorButton(
+        pantalla: _pantallaNames[_tabActual],
+        appNombre: 'Comercio',
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endContained,
     );
   }
 

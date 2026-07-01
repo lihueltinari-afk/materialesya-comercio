@@ -17,6 +17,7 @@ class _DetallePedidoScreenState extends State<DetallePedidoScreen> {
   Map<String, dynamic>? _reclamo;
   bool _cargando = true;
   bool _procesando = false;
+  bool _repartoPropio = false;
   Timer? _timer;
 
   @override
@@ -24,7 +25,13 @@ class _DetallePedidoScreenState extends State<DetallePedidoScreen> {
     super.initState();
     _cargarPedido();
     _cargarReclamo();
+    _cargarRepartoPropio();
     _timer = Timer.periodic(const Duration(seconds: 10), (_) => _cargarPedido());
+  }
+
+  Future<void> _cargarRepartoPropio() async {
+    final comercio = await ApiService.comercioActual();
+    if (mounted) setState(() => _repartoPropio = comercio?['reparto_propio'] == true);
   }
 
   Future<void> _cargarReclamo() async {
@@ -246,6 +253,20 @@ class _DetallePedidoScreenState extends State<DetallePedidoScreen> {
     }
   }
 
+  Future<void> _cambiarEstadoRepartoPropio(String nuevoEstado) async {
+    setState(() => _procesando = true);
+    final ok = await ApiService.cambiarEstadoPedido(widget.pedidoId, nuevoEstado);
+    if (!mounted) return;
+    setState(() => _procesando = false);
+    if (ok) {
+      await _cargarPedido();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Error al actualizar el pedido'), backgroundColor: Colors.red),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -322,6 +343,27 @@ class _DetallePedidoScreenState extends State<DetallePedidoScreen> {
             ),
           ),
           const SizedBox(height: 12),
+
+          // Repartidor asignado
+          if ((pedido['repartidor_nombre'] ?? '').toString().isNotEmpty)
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Repartidor', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: kAzul)),
+                    const Divider(),
+                    _infoRow(Icons.delivery_dining, pedido['repartidor_nombre'].toString()),
+                    if ((pedido['repartidor_telefono'] ?? '').toString().isNotEmpty)
+                      _infoRow(Icons.phone, pedido['repartidor_telefono'].toString()),
+                    if (pedido['repartidor_calificacion'] != null)
+                      _infoRow(Icons.star, '${double.tryParse(pedido['repartidor_calificacion'].toString())?.toStringAsFixed(1) ?? '-'} / 5'),
+                  ],
+                ),
+              ),
+            ),
+          if ((pedido['repartidor_nombre'] ?? '').toString().isNotEmpty) const SizedBox(height: 12),
 
           // Productos
           Card(
@@ -475,6 +517,58 @@ class _DetallePedidoScreenState extends State<DetallePedidoScreen> {
               label: const Text('Pedido listo para retirar'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.purple,
+                foregroundColor: Colors.white,
+                minimumSize: const Size.fromHeight(50),
+              ),
+            ),
+          ] else if (estado == 'listo_para_retirar' && !_repartoPropio && pedido['repartidor_id'] == null) ...[
+            Builder(builder: (context) {
+              final actualizadoEn = DateTime.tryParse(pedido['actualizado_en']?.toString() ?? '');
+              final esperando = actualizadoEn != null ? DateTime.now().difference(actualizadoEn) : Duration.zero;
+              final tardando = esperando.inMinutes >= 8;
+              if (!tardando) {
+                return const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 4),
+                  child: Text('Buscando un repartidor disponible…', style: TextStyle(color: Colors.grey, fontSize: 13)),
+                );
+              }
+              return Column(children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(color: Colors.orange.shade50, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.orange.shade200)),
+                  child: const Row(children: [
+                    Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 20),
+                    SizedBox(width: 8),
+                    Expanded(child: Text('Nadie tomó este pedido todavía. Podés entregarlo vos mismo si no querés esperar más.', style: TextStyle(fontSize: 13, color: Colors.black87))),
+                  ]),
+                ),
+                const SizedBox(height: 12),
+                ElevatedButton.icon(
+                  onPressed: () => _cambiarEstadoRepartoPropio('en_camino'),
+                  icon: const Icon(Icons.delivery_dining),
+                  label: const Text('Entregar yo mismo este pedido'),
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo, foregroundColor: Colors.white, minimumSize: const Size.fromHeight(50)),
+                ),
+              ]);
+            }),
+          ] else if (estado == 'listo_para_retirar' && _repartoPropio) ...[
+            ElevatedButton.icon(
+              onPressed: () => _cambiarEstadoRepartoPropio('en_camino'),
+              icon: const Icon(Icons.delivery_dining),
+              label: const Text('Salí a entregar (reparto propio)'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.indigo,
+                foregroundColor: Colors.white,
+                minimumSize: const Size.fromHeight(50),
+              ),
+            ),
+          ] else if (estado == 'en_camino' && _repartoPropio) ...[
+            ElevatedButton.icon(
+              onPressed: () => _cambiarEstadoRepartoPropio('entregado'),
+              icon: const Icon(Icons.check_circle_outline),
+              label: const Text('Marcar como entregado'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
                 foregroundColor: Colors.white,
                 minimumSize: const Size.fromHeight(50),
               ),

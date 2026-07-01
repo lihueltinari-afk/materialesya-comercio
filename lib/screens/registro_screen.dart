@@ -176,6 +176,7 @@ class _RegistroScreenState extends State<RegistroScreen> {
       }
 
       await ApiService.guardarToken(token);
+      await ApiService.guardarEmailUsuario(_emailCtrl.text.trim());
 
       // Paso 2: Crear comercio
       final resComercio = await ApiService.post('/comercios', {

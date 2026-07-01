@@ -30,6 +30,7 @@ class _PerfilScreenState extends State<PerfilScreen> with WidgetsBindingObserver
   final _cbuCtrl = TextEditingController();
   final _cuitCtrl = TextEditingController();
   double _radioEntrega = 5;
+  bool _repartoPropio = false;
   double? _lat;
   double? _lng;
   String? _logoUrl;
@@ -78,39 +79,44 @@ class _PerfilScreenState extends State<PerfilScreen> with WidgetsBindingObserver
     }
   }
 
-  // Sube logo o banner del comercio. Como no hay un servicio de almacenamiento de imágenes
-  // conectado (S3/Cloudinary/etc), la imagen se manda como base64 (data URL) directo al campo
-  // logo_url/banner_url — funciona bien para fotos chicas/medianas, igual que se hizo con las
-  // fotos de reclamos. Si más adelante se conecta un storage real, solo hay que cambiar esta
-  // función para subir el archivo ahí y guardar la URL en vez del base64 completo.
   Future<void> _cambiarImagen(bool esLogo) async {
     final picker = ImagePicker();
     final archivo = await picker.pickImage(source: ImageSource.gallery, maxWidth: esLogo ? 400 : 1200, imageQuality: 80);
     if (archivo == null) return;
     setState(() => _subiendoImagen = true);
-    final bytes = await archivo.readAsBytes();
-    final base64Str = 'data:image/jpeg;base64,${base64Encode(bytes)}';
-
-    final ok = await ApiService.actualizarComercio({
-      esLogo ? 'logo_url' : 'banner_url': base64Str,
-    });
-    if (!mounted) return;
-    setState(() {
-      _subiendoImagen = false;
-      if (ok) { if (esLogo) _logoUrl = base64Str; else _bannerUrl = base64Str; }
-    });
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(ok ? '${esLogo ? 'Logo' : 'Banner'} actualizado ✓' : 'Error al subir la imagen'),
-      backgroundColor: ok ? Colors.green : Colors.red,
-    ));
+    try {
+      final bytes = await archivo.readAsBytes();
+      final base64Str = 'data:image/jpeg;base64,${base64Encode(bytes)}';
+      final res = await ApiService.post('/upload', {'imagen': base64Str, 'carpeta': 'comercios'});
+      if (!mounted) return;
+      final url = res['data']?['url'] as String?;
+      if (res['status'] == 200 && url != null) {
+        final ok = await ApiService.actualizarComercio({esLogo ? 'logo_url' : 'banner_url': url});
+        if (!mounted) return;
+        setState(() {
+          _subiendoImagen = false;
+          if (ok) { if (esLogo) _logoUrl = url; else _bannerUrl = url; }
+        });
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(ok ? '${esLogo ? 'Logo' : 'Banner'} actualizado ✓' : 'Error al guardar la imagen'),
+          backgroundColor: ok ? Colors.green : Colors.red,
+        ));
+      } else {
+        setState(() => _subiendoImagen = false);
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('No se pudo subir la imagen. Verificá la conexión.'),
+          backgroundColor: Colors.red,
+        ));
+      }
+    } catch (_) {
+      if (mounted) setState(() => _subiendoImagen = false);
+    }
   }
 
-  // NetworkImage no soporta URLs "data:" (base64) — si la imagen viene recién subida usamos
-  // MemoryImage decodificando el base64, si es una URL http normal usamos NetworkImage.
   ImageProvider _imagenDesde(String url) {
     if (url.startsWith('data:')) {
-      final base64Str = url.split(',').last;
-      return MemoryImage(base64Decode(base64Str));
+      return MemoryImage(base64Decode(url.split(',').last));
     }
     return NetworkImage(url);
   }
@@ -155,6 +161,7 @@ class _PerfilScreenState extends State<PerfilScreen> with WidgetsBindingObserver
           _lng = double.tryParse(comercio['lng']?.toString() ?? '');
           _logoUrl = comercio['logo_url'];
           _bannerUrl = comercio['banner_url'];
+          _repartoPropio = comercio['reparto_propio'] == true;
           final radio = comercio['radio_entrega_km'];
           if (radio != null) {
             _radioEntrega = double.tryParse(radio.toString()) ?? 5;
@@ -172,9 +179,27 @@ class _PerfilScreenState extends State<PerfilScreen> with WidgetsBindingObserver
     }
   }
 
+  bool _cuitValido(String cuit) {
+    final nums = cuit.replaceAll(RegExp(r'[-\s]'), '');
+    if (nums.length != 11 || !RegExp(r'^\d{11}$').hasMatch(nums)) return false;
+    const prefijos = ['20', '23', '24', '27', '30', '33', '34'];
+    if (!prefijos.contains(nums.substring(0, 2))) return false;
+    const mults = [5, 4, 3, 2, 7, 6, 5, 4, 3, 2];
+    var suma = 0;
+    for (var i = 0; i < mults.length; i++) { suma += mults[i] * int.parse(nums[i]); }
+    final resto = suma % 11;
+    final v = resto == 0 ? 0 : resto == 1 ? 9 : 11 - resto;
+    return v == int.parse(nums[10]);
+  }
+
   Future<void> _guardar() async {
     if (_nombreCtrl.text.trim().isEmpty) {
       _mostrarError('El nombre del comercio no puede estar vacío');
+      return;
+    }
+    final cuit = _cuitCtrl.text.trim();
+    if (cuit.isNotEmpty && !_cuitValido(cuit)) {
+      _mostrarError('El CUIT ingresado no es válido. Verificá los 11 dígitos y el dígito verificador.');
       return;
     }
 
@@ -189,6 +214,7 @@ class _PerfilScreenState extends State<PerfilScreen> with WidgetsBindingObserver
       'cbu_alias': _cbuCtrl.text.trim(),
       'cuit': _cuitCtrl.text.trim(),
       'radio_entrega_km': _radioEntrega.round(),
+      'reparto_propio': _repartoPropio,
     });
 
     if (!mounted) return;
@@ -451,6 +477,46 @@ class _PerfilScreenState extends State<PerfilScreen> with WidgetsBindingObserver
                           activeColor: kNaranja,
                           label: '${_radioEntrega.round()} km',
                           onChanged: (v) => setState(() => _radioEntrega = v),
+                        ),
+                        const SizedBox(height: 8),
+                        SwitchListTile(
+                          contentPadding: EdgeInsets.zero,
+                          value: _repartoPropio,
+                          activeColor: kNaranja,
+                          title: const Text('Reparto propio', style: TextStyle(fontWeight: FontWeight.w600)),
+                          subtitle: const Text(
+                            'Si lo activás, tus pedidos no aparecen para los repartidores de MaterialesYa: '
+                            'vos mismo los marcás como "en camino" y "entregado" desde la pantalla de pedidos.',
+                            style: TextStyle(fontSize: 12, color: Colors.grey),
+                          ),
+                          onChanged: (v) async {
+                            if (v) {
+                              // Al activar reparto propio: pedir confirmación sobre el cobro
+                              final confirmo = await showDialog<bool>(
+                                context: context,
+                                builder: (_) => AlertDialog(
+                                  title: const Text('Confirmar reparto propio'),
+                                  content: const Text(
+                                    'Al activar el reparto propio, el costo de envío que '
+                                    'se cobra al cliente se acredita en la misma cuenta '
+                                    'de Mercado Pago donde recibís el pago del producto.\n\n'
+                                    '¿Confirmás que entendés y aceptás esta condición?',
+                                  ),
+                                  actions: [
+                                    TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
+                                    ElevatedButton(
+                                      onPressed: () => Navigator.pop(context, true),
+                                      style: ElevatedButton.styleFrom(backgroundColor: kNaranja, foregroundColor: Colors.white),
+                                      child: const Text('Sí, acepto'),
+                                    ),
+                                  ],
+                                ),
+                              );
+                              if (confirmo == true) setState(() => _repartoPropio = true);
+                            } else {
+                              setState(() => _repartoPropio = false);
+                            }
+                          },
                         ),
                         const SizedBox(height: 8),
                         SizedBox(

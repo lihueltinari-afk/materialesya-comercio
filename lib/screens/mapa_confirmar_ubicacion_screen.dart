@@ -2,6 +2,7 @@
 // cargada (ej: una calle de otra ciudad). Busca la dirección escrita con Nominatim
 // (OpenStreetMap, gratuito, sin API key) para centrar el mapa, y el usuario confirma/ajusta
 // el pin a mano tocando el mapa antes de guardar.
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -24,8 +25,9 @@ class _MapaConfirmarUbicacionScreenState extends State<MapaConfirmarUbicacionScr
   final _mapController = MapController();
   late final TextEditingController _direccionCtrl;
   LatLng _pin = const LatLng(-32.8895, -68.8458); // centro de Mendoza por defecto
+  List<Map<String, dynamic>> _sugerencias = [];
   bool _buscando = false;
-  String? _error;
+  Timer? _debounce;
 
   @override
   void initState() {
@@ -34,35 +36,58 @@ class _MapaConfirmarUbicacionScreenState extends State<MapaConfirmarUbicacionScr
     if (widget.latInicial != null && widget.lngInicial != null) {
       _pin = LatLng(widget.latInicial!, widget.lngInicial!);
     } else if (widget.direccionInicial.trim().isNotEmpty) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _buscarDireccion());
+      WidgetsBinding.instance.addPostFrameCallback((_) => _buscarSugerencias(widget.direccionInicial));
     }
   }
 
-  Future<void> _buscarDireccion() async {
-    if (_direccionCtrl.text.trim().isEmpty) return;
-    setState(() { _buscando = true; _error = null; });
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    _direccionCtrl.dispose();
+    super.dispose();
+  }
+
+  void _onCambioTexto(String texto) {
+    _debounce?.cancel();
+    if (texto.trim().length < 4) { setState(() => _sugerencias = []); return; }
+    _debounce = Timer(const Duration(milliseconds: 600), () => _buscarSugerencias(texto));
+  }
+
+  Future<void> _buscarSugerencias(String texto) async {
+    if (texto.trim().isEmpty) return;
+    setState(() { _buscando = true; _sugerencias = []; });
     try {
-      final query = Uri.encodeComponent('${_direccionCtrl.text.trim()}, Mendoza, Argentina');
+      final query = Uri.encodeComponent('$texto, Mendoza, Argentina');
       final res = await http.get(
-        Uri.parse('https://nominatim.openstreetmap.org/search?q=$query&format=json&limit=1'),
-        headers: {'User-Agent': 'MaterialesYa/1.0'},
-      ).timeout(const Duration(seconds: 8));
-      if (res.statusCode == 200) {
+        Uri.parse('https://nominatim.openstreetmap.org/search?q=$query&format=json&limit=5&countrycodes=ar&addressdetails=1'),
+        headers: {'User-Agent': 'MaterialesYa/1.0 (materialesya@gmail.com)'},
+      ).timeout(const Duration(seconds: 6));
+      if (res.statusCode == 200 && mounted) {
         final data = jsonDecode(res.body) as List;
-        if (data.isNotEmpty) {
-          final lat = double.parse(data[0]['lat']);
-          final lng = double.parse(data[0]['lon']);
-          setState(() => _pin = LatLng(lat, lng));
-          _mapController.move(_pin, 16);
-        } else {
-          setState(() => _error = 'No encontramos esa dirección. Movete en el mapa y tocá para marcar el lugar exacto.');
+        if (data.isEmpty) {
+          setState(() { _buscando = false; _sugerencias = []; });
+          return;
         }
+        setState(() => _sugerencias = data.map((d) {
+          final addr = d['address'] as Map<String, dynamic>? ?? {};
+          final calle = addr['road'] ?? addr['pedestrian'] ?? '';
+          final numero = addr['house_number'] ?? '';
+          final barrio = addr['suburb'] ?? addr['neighbourhood'] ?? '';
+          String nombre = calle.isNotEmpty
+            ? '$calle${numero.isNotEmpty ? ' $numero' : ''}${barrio.isNotEmpty ? ', $barrio' : ''}'
+            : (d['display_name'] as String).split(',').take(2).join(',');
+          return {'nombre': nombre.trim(), 'lat': double.parse(d['lat']), 'lng': double.parse(d['lon'])};
+        }).toList());
       }
-    } catch (_) {
-      setState(() => _error = 'No se pudo buscar la dirección. Movete en el mapa y tocá para marcar el lugar.');
-    } finally {
-      if (mounted) setState(() => _buscando = false);
-    }
+    } catch (_) {}
+    if (mounted) setState(() => _buscando = false);
+  }
+
+  void _seleccionarSugerencia(Map<String, dynamic> s) {
+    _direccionCtrl.text = s['nombre'] as String;
+    final pos = LatLng(s['lat'] as double, s['lng'] as double);
+    setState(() { _pin = pos; _sugerencias = []; });
+    _mapController.move(pos, 16);
   }
 
   @override
@@ -71,34 +96,52 @@ class _MapaConfirmarUbicacionScreenState extends State<MapaConfirmarUbicacionScr
       appBar: AppBar(title: const Text('Confirmá la ubicación'), backgroundColor: Colors.white, foregroundColor: _textDark, elevation: 0.5),
       body: Column(children: [
         Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(children: [
-            Expanded(child: TextField(
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            TextField(
               controller: _direccionCtrl,
-              onSubmitted: (_) => _buscarDireccion(),
+              onChanged: _onCambioTexto,
               decoration: InputDecoration(
-                hintText: 'Dirección (ej: Av. San Martín 1234)',
+                hintText: 'Ej: Av. San Martín 1234',
+                prefixIcon: const Icon(Icons.search, color: _amber),
                 filled: true, fillColor: Colors.grey.shade50,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: Colors.grey.shade300)),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade300)),
+                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: _amber)),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                suffixIcon: _buscando
+                  ? const Padding(padding: EdgeInsets.all(12), child: SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: _amber)))
+                  : null,
               ),
-            )),
-            const SizedBox(width: 8),
-            ElevatedButton(
-              onPressed: _buscando ? null : _buscarDireccion,
-              style: ElevatedButton.styleFrom(backgroundColor: _amber, foregroundColor: Colors.white),
-              child: _buscando ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.search),
             ),
+            if (_sugerencias.isNotEmpty)
+              Container(
+                margin: const EdgeInsets.only(top: 4),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey.shade200),
+                  boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 8, offset: const Offset(0, 2))],
+                ),
+                child: Column(
+                  children: _sugerencias.map((s) => InkWell(
+                    onTap: () => _seleccionarSugerencia(s),
+                    borderRadius: BorderRadius.circular(12),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      child: Row(children: [
+                        const Icon(Icons.location_on_outlined, color: _amber, size: 18),
+                        const SizedBox(width: 10),
+                        Expanded(child: Text(s['nombre'] as String,
+                          style: const TextStyle(fontSize: 13, color: _textDark))),
+                      ]),
+                    ),
+                  )).toList(),
+                ),
+              ),
+            const SizedBox(height: 8),
+            const Text('Tocá el mapa para ajustar el punto exacto.',
+              style: TextStyle(fontSize: 12, color: Colors.grey)),
           ]),
-        ),
-        if (_error != null) Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Text(_error!, style: const TextStyle(color: Colors.red, fontSize: 12)),
-        ),
-        const Padding(
-          padding: EdgeInsets.fromLTRB(12, 8, 12, 4),
-          child: Text('Tocá el mapa para ajustar el punto exacto de tu local. Así nos aseguramos de que no quede en otra calle o ciudad.',
-            style: TextStyle(fontSize: 12, color: Colors.grey)),
         ),
         Expanded(
           child: Stack(children: [

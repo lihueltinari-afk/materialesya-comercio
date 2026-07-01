@@ -3,9 +3,16 @@ import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/main_screen.dart';
 import 'services/api_service.dart';
+import 'services/notificacion_service.dart';
+import 'services/remote_config_service.dart';
 import 'theme.dart';
 
-void main() => runApp(const MaterialesYaComercioApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  NotificacionService.init().catchError((_) {});
+  RemoteConfigService.init().catchError((_) {});
+  runApp(const MaterialesYaComercioApp());
+}
 
 class MaterialesYaComercioApp extends StatefulWidget {
   const MaterialesYaComercioApp({super.key});

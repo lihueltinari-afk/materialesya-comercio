@@ -1,11 +1,15 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart' show VoidCallback;
+import 'package:flutter/foundation.dart' show VoidCallback, kReleaseMode;
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
-  // TODO: volver a la URL de Railway antes de compilar para producción.
-  static const String _base = 'http://localhost:3000/api';
+  static const String _prod = 'https://materialesya-backend-production.up.railway.app/api';
+  static String get _base {
+    const env = String.fromEnvironment('API_URL', defaultValue: '');
+    if (env.isNotEmpty) return env;
+    return kReleaseMode ? _prod : 'http://localhost:3000/api';
+  }
 
   static VoidCallback? onSesionExpirada;
   static bool _sesionExpirandose = false;
@@ -28,6 +32,12 @@ class ApiService {
   static Future<String?> obtenerToken() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('token_comercio');
+  }
+
+  static Future<void> guardarSesion(String token, Map<String, dynamic> usuario) async {
+    await guardarToken(token);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('usuario_comercio', jsonEncode(usuario));
   }
 
   static Future<void> cerrarSesion() async {
@@ -210,11 +220,14 @@ class ApiService {
   /// productos con offset creciente a medida que el usuario llega al final de la lista).
   /// Devuelve {'productos': [...], 'hayMas': bool}.
   static Future<Map<String, dynamic>> buscarCatalogoPagina({
-    String busqueda = '', int? categoriaId, int limit = 24, int offset = 0,
+    String busqueda = '', int? categoriaId, int? marcaId, String? marcaNombre, int? subcategoriaId, int limit = 24, int offset = 0,
   }) async {
     var query = '?limit=$limit&offset=$offset';
     if (busqueda.isNotEmpty) query += '&busqueda=${Uri.encodeComponent(busqueda)}';
     if (categoriaId != null) query += '&categoria_id=$categoriaId';
+    if (marcaNombre != null && marcaNombre.isNotEmpty) query += '&marca_nombre=${Uri.encodeComponent(marcaNombre)}';
+    else if (marcaId != null) query += '&marca_id=$marcaId';
+    if (subcategoriaId != null) query += '&subcategoria_id=$subcategoriaId';
     final res = await get('/catalogo-maestro$query');
     if (res['status'] == 200) {
       final data = res['data'];
@@ -259,6 +272,11 @@ class ApiService {
   /// Actualiza el precio de un producto del comercio.
   static Future<bool> actualizarPrecioProducto(int productoId, double precio) async {
     final res = await patch('/comercio/productos/$productoId', {'precio': precio});
+    return res['status'] == 200;
+  }
+
+  static Future<bool> actualizarStockProducto(int productoId, int stock) async {
+    final res = await patch('/comercio/productos/$productoId', {'stock': stock});
     return res['status'] == 200;
   }
 
@@ -324,6 +342,24 @@ class ApiService {
     final res = await post('/comercio/productos/importar', {'productos': productos});
     if (res['status'] == 200) return res['data'];
     return {'actualizados': 0, 'errores': ['Error de conexión con el servidor']};
+  }
+
+  /// Obtiene el perfil del usuario logueado desde el servidor (incluye email_verificado).
+  static Future<Map<String, dynamic>?> usuarioActualRemoto() async {
+    final res = await get('/auth/me');
+    if (res['status'] == 200) return res['data'];
+    return null;
+  }
+
+  /// Guarda el email del usuario logueado para poder mostrarlo en VerificarEmailScreen.
+  static Future<void> guardarEmailUsuario(String email) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('email_usuario', email);
+  }
+
+  static Future<String?> obtenerEmailUsuario() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('email_usuario');
   }
 
   /// Cuenta pedidos pendientes (para badges).

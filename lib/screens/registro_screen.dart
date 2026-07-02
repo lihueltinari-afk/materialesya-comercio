@@ -6,6 +6,8 @@ import '../legal_texts.dart';
 import 'verificar_email_screen.dart';
 import 'legal_screen.dart';
 import 'mapa_confirmar_ubicacion_screen.dart';
+import '../widgets/direccion_field.dart';
+import '../widgets/mapa_pin_widget.dart';
 
 class RegistroScreen extends StatefulWidget {
   const RegistroScreen({super.key});
@@ -348,21 +350,60 @@ class _RegistroScreenState extends State<RegistroScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        TextField(
+        // Campo con autocompletado Google Maps Places + botón GPS
+        DireccionField(
           controller: _direccionCtrl,
-          decoration: const InputDecoration(
-            labelText: 'Dirección *',
-            border: OutlineInputBorder(),
-          ),
+          label: 'Dirección del local *',
+          hint: 'Ej: Av. Las Heras 1234, Mendoza',
+          onDireccionSeleccionada: (dir, lat, lng) {
+            setState(() {
+              _lat = lat;
+              _lng = lng;
+              _direccionCtrl.text = dir;
+            });
+          },
         ),
+        const SizedBox(height: 12),
+        // Mapa embebido con pin arrastrable (visible cuando hay coordenadas)
+        if (_lat != null && _lng != null)
+          MapaPinWidget(
+            lat: _lat!,
+            lng: _lng!,
+            height: 180,
+            onPinMovido: (lat, lng, dir) {
+              setState(() {
+                _lat = lat;
+                _lng = lng;
+                if (dir.isNotEmpty) _direccionCtrl.text = dir;
+              });
+            },
+          ),
+        if (_lat != null && _lng != null) const SizedBox(height: 4),
+        if (_lat != null && _lng != null)
+          Text(
+            'Podés arrastrar el pin para ajustar la posición exacta.',
+            style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+          ),
         const SizedBox(height: 8),
+        // Botón alternativo para abrir la pantalla de mapa completa (OpenStreetMap, sin key)
         OutlinedButton.icon(
           onPressed: _confirmarUbicacion,
-          icon: Icon(_lat != null ? Icons.check_circle : Icons.map_outlined, color: _lat != null ? Colors.green : AppColors.primary),
-          label: Text(_lat != null ? 'Ubicación confirmada en el mapa ✓' : 'Confirmar ubicación en el mapa *',
-            style: TextStyle(color: _lat != null ? Colors.green : AppColors.primary)),
+          icon: Icon(
+            _lat != null ? Icons.check_circle : Icons.map_outlined,
+            color: _lat != null ? Colors.green : AppColors.primary,
+          ),
+          label: Text(
+            _lat != null
+                ? 'Ajustar ubicación en el mapa ✓'
+                : 'Confirmar ubicación en el mapa *',
+            style: TextStyle(
+              color: _lat != null ? Colors.green : AppColors.primary,
+            ),
+          ),
           style: OutlinedButton.styleFrom(
-            side: BorderSide(color: _lat != null ? Colors.green : AppColors.primary),
+            side: BorderSide(
+              color: _lat != null ? Colors.green : AppColors.primary,
+            ),
             minimumSize: const Size.fromHeight(46),
           ),
         ),

@@ -337,8 +337,10 @@ class _ExcelPreciosScreenState extends State<ExcelPreciosScreen> {
           'precio': cols['precio'] != null ? (cols['precio'] as num).toInt() : null,
           'stock':  cols['stock']  != null ? (cols['stock']  as num).toInt() : null,
         };
-        if (res['data']['primeraEsHeader'] == true && filasBruto.isNotEmpty) {
-          filasBruto = filasBruto.sublist(1);
+        // Saltar filas de título/encabezado (puede haber más de 1 antes de los datos)
+        final filasHeader = (res['data']['filasHeader'] as num?)?.toInt() ?? 1;
+        if (filasBruto.length > filasHeader) {
+          filasBruto = filasBruto.sublist(filasHeader);
         }
       }
     } catch (e) {
@@ -362,7 +364,13 @@ class _ExcelPreciosScreenState extends State<ExcelPreciosScreen> {
     });
     if (!mounted) return;
     if (res2['status'] != 200) {
-      setState(() { _pantalla = 0; _error = res2['data']?['error'] ?? 'Error al procesar'; });
+      final errMsg = res2['data']?['error'] ?? 'Error al procesar';
+      final colsDet = res2['data']?['columnasDetectadas'];
+      String detalle = errMsg;
+      if (colsDet != null) {
+        detalle += '\n\nColumnas detectadas: nombre=${colsDet['nombre']}, precio=${colsDet['precio']}, código=${colsDet['codigo']}';
+      }
+      setState(() { _pantalla = 0; _error = detalle; });
       return;
     }
     setState(() => _pasoStatus[3] = 2);
@@ -471,10 +479,21 @@ class _ExcelPreciosScreenState extends State<ExcelPreciosScreen> {
           ..._faltantes.asMap().entries.map((e) => _cardFaltante(e.key, e.value)),
           const SizedBox(height: 80),
         ],
-        if (_automaticos.isEmpty && _nuevos.isEmpty && _confirmar.isEmpty && _faltantes.isEmpty)
-          Padding(padding: const EdgeInsets.all(40), child: Center(
-            child: Text('No se encontraron productos para procesar.', style: GoogleFonts.poppins(color: _grey)),
-          )),
+        if (_automaticos.isEmpty && _nuevos.isEmpty && _confirmar.isEmpty)
+          Container(
+            margin: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(color: Colors.orange.shade50, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.orange.shade200)),
+            child: Column(children: [
+              const Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 36),
+              const SizedBox(height: 8),
+              Text('No se encontraron coincidencias con tu catálogo', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w700, color: _dark), textAlign: TextAlign.center),
+              const SizedBox(height: 4),
+              Text('El Excel se procesó pero ningún producto coincidió con los que tenés cargados. Revisá que los nombres sean similares o que las columnas estén bien detectadas.', style: GoogleFonts.poppins(fontSize: 11, color: _grey), textAlign: TextAlign.center),
+              const SizedBox(height: 12),
+              OutlinedButton(onPressed: _volverAtras, child: Text('Volver e intentar de nuevo', style: GoogleFonts.poppins(fontSize: 12))),
+            ]),
+          ),
       ])),
       // Botón sticky
       Container(
@@ -893,6 +912,7 @@ class _ExcelPreciosScreenState extends State<ExcelPreciosScreen> {
     try {
       final actualizados = _automaticos.asMap().entries.map((e) => {
         'productoId': e.value['productoId'],
+        'catalogoProductoId': e.value['catalogoProductoId'],
         'precioNuevo': e.value['precioNuevo'],
         'stockNuevo': e.value['stockNuevo'],
         'fila': e.value['fila'],
@@ -904,6 +924,7 @@ class _ExcelPreciosScreenState extends State<ExcelPreciosScreen> {
         .where((e) => _decConfirmar[e.key] == 'si')
         .map((e) => {
           'productoId': e.value['productoId'],
+          'catalogoProductoId': e.value['catalogoProductoId'],
           'precioNuevo': e.value['precioNuevo'],
           'stockNuevo': e.value['stockNuevo'],
           'fila': e.value['fila'],

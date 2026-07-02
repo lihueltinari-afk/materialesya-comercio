@@ -9,6 +9,7 @@ import '../legal_texts.dart';
 import 'login_screen.dart';
 import 'legal_screen.dart';
 import 'mapa_confirmar_ubicacion_screen.dart';
+import 'config_rubros_screen.dart';
 
 class PerfilScreen extends StatefulWidget {
   const PerfilScreen({super.key});
@@ -647,6 +648,20 @@ class _PerfilScreenState extends State<PerfilScreen> with WidgetsBindingObserver
                       ],
                     ]),
                   ),
+                ),
+                const SizedBox(height: 16),
+
+                // Configuración del negocio
+                Card(
+                  child: Column(children: [
+                    ListTile(
+                      leading: const Icon(Icons.category_rounded, color: AppColors.primary),
+                      title: const Text('Mis rubros'),
+                      subtitle: const Text('Especialidades de tu negocio'),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ConfigRubrosScreen())),
+                    ),
+                  ]),
                 ),
                 const SizedBox(height: 16),
 

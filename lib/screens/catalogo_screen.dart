@@ -4,6 +4,7 @@ import '../services/api_service.dart';
 import 'carga_masiva_screen.dart';
 import 'marcas_screen.dart';
 import 'catalogo_navegacion_screen.dart';
+import 'catalogo_por_rubros_screen.dart';
 
 const _amber = Color(0xFFE07B00);
 const _textDark = Color(0xFF1A1A1A);
@@ -37,6 +38,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
   bool _cargandoMas = false;
   bool _hayMas = true;
   bool _vistaMisProductos = false;
+  bool _vistaRubros = false;
   bool _vistaSeleccionMarca = true; // empieza en selección de marca
 
   @override
@@ -127,9 +129,10 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
     setState(() { _misProductos = prods; _cargando = false; });
   }
 
-  void _cambiarVista(bool misProductos) {
+  void _cambiarVista(bool misProductos, {bool rubros = false}) {
     setState(() {
       _vistaMisProductos = misProductos;
+      _vistaRubros = rubros;
       _marcaFiltroMisProductos = null;
     });
     if (misProductos) _cargarMisProductos();
@@ -200,6 +203,18 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Vista por rubros
+    if (_vistaRubros) {
+      return Column(children: [
+        Container(
+          color: Colors.white,
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
+          child: _selectorVista(),
+        ),
+        Expanded(child: CatalogoPorRubrosScreen(comercioId: widget.comercioId)),
+      ]);
+    }
+
     // Catálogo maestro: navegar por rubros/marcas/productos
     if (!_vistaMisProductos) {
       return _buildCatalogoMaestroWrapper();
@@ -674,8 +689,9 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
       decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(10)),
       padding: const EdgeInsets.all(3),
       child: Row(children: [
-        Expanded(child: _botonVista('Catálogo maestro', !_vistaMisProductos, () => _cambiarVista(false))),
+        Expanded(child: _botonVista('Catálogo', !_vistaMisProductos && !_vistaRubros, () => _cambiarVista(false))),
         Expanded(child: _botonVista('Mi catálogo', _vistaMisProductos, () => _cambiarVista(true))),
+        Expanded(child: _botonVista('Por rubro', _vistaRubros, () => _cambiarVista(false, rubros: true))),
       ]),
     );
   }

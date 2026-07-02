@@ -4,6 +4,7 @@ import 'package:flutter/gestures.dart';
 import '../services/api_service.dart';
 import '../legal_texts.dart';
 import 'verificar_email_screen.dart';
+import 'seleccion_rubros_screen.dart';
 import 'legal_screen.dart';
 import 'mapa_confirmar_ubicacion_screen.dart';
 import '../widgets/direccion_field.dart';
@@ -209,6 +210,12 @@ class _RegistroScreenState extends State<RegistroScreen> {
 
       if (!mounted) return;
 
+      // Navegar a selección de rubros antes de verificar email
+      await Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const SeleccionRubrosScreen(esRegistro: true)),
+      );
+
+      if (!mounted) return;
       Navigator.of(context).push(
         MaterialPageRoute(builder: (_) => VerificarEmailScreen(email: _emailCtrl.text.trim())),
       );

@@ -20,8 +20,16 @@ class _VerificarEmailScreenState extends State<VerificarEmailScreen> {
   final _codigoCtrl = TextEditingController();
   bool _cargando = false;
   bool _reenviando = false;
+  bool _cambiandoEmail = false;
   String? _error;
   String? _info;
+  late String _emailActual;
+
+  @override
+  void initState() {
+    super.initState();
+    _emailActual = widget.email;
+  }
 
   @override
   void dispose() {
@@ -38,7 +46,7 @@ class _VerificarEmailScreenState extends State<VerificarEmailScreen> {
 
     final res = await ApiService.post(
       '/auth/verificar-email',
-      {'email': widget.email, 'codigo': _codigoCtrl.text.trim()},
+      {'email': _emailActual, 'codigo': _codigoCtrl.text.trim()},
     );
     if (!mounted) return;
 
@@ -62,18 +70,100 @@ class _VerificarEmailScreenState extends State<VerificarEmailScreen> {
 
   Future<void> _reenviar() async {
     setState(() { _reenviando = true; _info = null; _error = null; });
-    await ApiService.post('/auth/reenviar-verificacion', {'email': widget.email});
+    await ApiService.post('/auth/reenviar-verificacion', {'email': _emailActual});
     if (!mounted) return;
     setState(() {
       _reenviando = false;
-      _info = 'Te enviamos un código nuevo a ${widget.email}';
+      _info = 'Te enviamos un código nuevo a $_emailActual';
     });
+  }
+
+  Future<void> _mostrarDialogoModificarEmail() async {
+    final nuevoEmailCtrl = TextEditingController();
+    String? errorLocal;
+
+    await showDialog(
+      context: context,
+      barrierDismissible: !_cambiandoEmail,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setStateDialog) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text('Modificar email', style: TextStyle(fontWeight: FontWeight.w800)),
+          content: Column(mainAxisSize: MainAxisSize.min, children: [
+            Text('Email actual: $_emailActual', style: const TextStyle(fontSize: 13, color: Colors.grey)),
+            const SizedBox(height: 16),
+            TextField(
+              controller: nuevoEmailCtrl,
+              keyboardType: TextInputType.emailAddress,
+              decoration: InputDecoration(
+                labelText: 'Nuevo email',
+                hintText: 'ejemplo@gmail.com',
+                prefixIcon: const Icon(Icons.email_outlined),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                errorText: errorLocal,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text('Te enviaremos un nuevo código de verificación al email nuevo.', style: TextStyle(fontSize: 12, color: Colors.grey)),
+          ]),
+          actions: [
+            TextButton(
+              onPressed: _cambiandoEmail ? null : () => Navigator.pop(ctx),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: _amber, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+              onPressed: _cambiandoEmail ? null : () async {
+                final nuevo = nuevoEmailCtrl.text.trim();
+                if (nuevo.isEmpty || !nuevo.contains('@')) {
+                  setStateDialog(() => errorLocal = 'Email inválido');
+                  return;
+                }
+                setStateDialog(() { _cambiandoEmail = true; errorLocal = null; });
+                final res = await ApiService.post('/auth/cambiar-email', {'email_actual': _emailActual, 'email_nuevo': nuevo});
+                if (!ctx.mounted) return;
+                if (res['status'] == 200) {
+                  Navigator.pop(ctx);
+                  setState(() {
+                    _emailActual = nuevo;
+                    _codigoCtrl.clear();
+                    _error = null;
+                    _info = '✓ Email actualizado. Te enviamos el código a $nuevo';
+                    _cambiandoEmail = false;
+                  });
+                } else {
+                  setStateDialog(() {
+                    errorLocal = res['data']?['error'] ?? 'Error al cambiar email';
+                    _cambiandoEmail = false;
+                  });
+                }
+              },
+              child: _cambiandoEmail
+                ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                : const Text('Cambiar y reenviar'),
+            ),
+          ],
+        ),
+      ),
+    );
+    setState(() => _cambiandoEmail = false);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
+      appBar: Navigator.canPop(context)
+        ? AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back, color: _textDark),
+              onPressed: () => Navigator.pop(context),
+              tooltip: 'Volver a editar datos',
+            ),
+          )
+        : null,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -87,8 +177,17 @@ class _VerificarEmailScreenState extends State<VerificarEmailScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Te enviamos un código de 6 dígitos a ${widget.email}.\nIngresalo acá abajo para activar tu cuenta.',
+              'Te enviamos un código de 6 dígitos a $_emailActual.\nIngresalo acá abajo para activar tu cuenta.',
               style: const TextStyle(fontSize: 14, color: Colors.grey),
+            ),
+            const SizedBox(height: 6),
+            GestureDetector(
+              onTap: _mostrarDialogoModificarEmail,
+              child: Row(children: [
+                const Icon(Icons.edit_outlined, size: 14, color: _amber),
+                const SizedBox(width: 4),
+                const Text('¿Email incorrecto? Modificar', style: TextStyle(fontSize: 13, color: _amber, fontWeight: FontWeight.w600)),
+              ]),
             ),
             const SizedBox(height: 28),
             TextField(

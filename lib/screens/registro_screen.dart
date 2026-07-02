@@ -207,9 +207,8 @@ class _RegistroScreenState extends State<RegistroScreen> {
 
       if (!mounted) return;
 
-      Navigator.of(context).pushAndRemoveUntil(
+      Navigator.of(context).push(
         MaterialPageRoute(builder: (_) => VerificarEmailScreen(email: _emailCtrl.text.trim())),
-        (_) => false,
       );
     } catch (e) {
       if (!mounted) return;

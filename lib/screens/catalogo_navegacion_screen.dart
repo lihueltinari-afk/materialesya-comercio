@@ -22,7 +22,8 @@ class CatalogoNavegacionScreen extends StatefulWidget {
 class _CatalogoNavegacionScreenState extends State<CatalogoNavegacionScreen> {
   List<dynamic> _grupos = [];
   List<dynamic> _misMarcas = [];
-  Set<String> _misMarcasNombres = {}; // nombres de marcas con productos en mi catálogo
+  List<dynamic> _rubrosComercio = [];
+  Set<String> _misMarcasNombres = {};
   bool _cargando = true;
   final _busCtrl = TextEditingController();
   String _q = '';
@@ -33,16 +34,16 @@ class _CatalogoNavegacionScreenState extends State<CatalogoNavegacionScreen> {
   Future<void> _cargar() async {
     final g = await ApiService.get('/marcas/grupos');
     final m = await ApiService.get('/marcas/mis-marcas');
+    final r = await ApiService.get('/rubros/comercio');
     final misProd = await ApiService.misProductos();
     if (!mounted) return;
-    // g['data'] = el JSON crudo de /marcas/grupos (un array directo)
-    // m['data'] = el JSON crudo de /marcas/mis-marcas ({ok, data:[...]})
     final gRaw = g['data'];
     final mRaw = m['data'];
     setState(() {
       _grupos    = gRaw is List ? gRaw : [];
       _misMarcas = mRaw is Map && mRaw['data'] is List ? mRaw['data']
                  : mRaw is List ? mRaw : [];
+      _rubrosComercio = r['status'] == 200 && r['data'] is List ? r['data'] as List : [];
       _misMarcasNombres = misProd
         .map((p) => ((p['marca'] as String?) ?? '').toLowerCase().trim())
         .where((s) => s.isNotEmpty)
@@ -51,13 +52,30 @@ class _CatalogoNavegacionScreenState extends State<CatalogoNavegacionScreen> {
     });
   }
 
+  List<dynamic> get _rubrosPrincipales =>
+    _rubrosComercio.where((r) => r['tipo'] == 'principal').toList()
+      ..sort((a, b) => (a['orden'] as int).compareTo(b['orden'] as int));
+
   List<dynamic> get _filtrados {
-    if (_q.isEmpty) return _grupos;
-    final q = _q.toLowerCase();
-    return _grupos.where((g) =>
-      (g['nombre'] as String).toLowerCase().contains(q) ||
-      (g['subcategorias'] as List? ?? []).any((s) => (s['nombre'] as String).toLowerCase().contains(q))
-    ).toList();
+    final nombresRubrosPrincipales = _rubrosPrincipales
+        .map((r) => (r['nombre'] as String).toLowerCase().trim())
+        .toSet();
+
+    List<dynamic> base = _grupos;
+    if (_q.isEmpty) {
+      // Excluir grupos que ya aparecen como rubros principales
+      base = _grupos.where((g) =>
+        !nombresRubrosPrincipales.contains((g['nombre'] as String).toLowerCase().trim())
+      ).toList();
+    } else {
+      final q = _q.toLowerCase();
+      base = _grupos.where((g) =>
+        ((g['nombre'] as String).toLowerCase().contains(q) ||
+        (g['subcategorias'] as List? ?? []).any((s) => (s['nombre'] as String).toLowerCase().contains(q))) &&
+        !nombresRubrosPrincipales.contains((g['nombre'] as String).toLowerCase().trim())
+      ).toList();
+    }
+    return base;
   }
 
   @override
@@ -106,54 +124,112 @@ class _CatalogoNavegacionScreenState extends State<CatalogoNavegacionScreen> {
           ),
         ]),
       ),
-      // Lista grupos
+      // Lista
       Expanded(
         child: _cargando
           ? const Center(child: CircularProgressIndicator(color: _navy))
-          : ListView.builder(
+          : ListView(
               padding: const EdgeInsets.all(12),
-              itemCount: _filtrados.length,
-              itemBuilder: (_, i) {
-                final g = _filtrados[i];
-                // Marcas de este grupo que trabaja el comercio
-                final grupoId = g['id'] as int;
-                final marcasGrupo = _misMarcas.where((m) {
-                  final gid = m['grupo_id'];
-                  return gid != null && (gid is int ? gid : int.tryParse(gid.toString())) == grupoId;
-                }).toList();
-
-                return GestureDetector(
-                  onTap: () => Navigator.push(context, MaterialPageRoute(
-                    builder: (_) => _PantallaEleccionMarca(
-                      grupo: g,
-                      marcasGrupo: marcasGrupo,
-                      todasMisMarcas: _misMarcas,
-                      misMarcasNombres: _misMarcasNombres,
-                      onCatalogoActualizado: _cargar,
-                    ),
-                  )),
-                  child: Container(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.grey.shade200),
-                    ),
+              children: [
+                // ── Rubros principales del comercio ──
+                if (_rubrosPrincipales.isNotEmpty && _q.isEmpty) ...[
+                  const Padding(
+                    padding: EdgeInsets.only(bottom: 8),
                     child: Row(children: [
-                      Text(g['icono'] ?? '📦', style: const TextStyle(fontSize: 22)),
-                      const SizedBox(width: 12),
-                      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Text(g['nombre'], style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: _dark)),
-                        if (marcasGrupo.isNotEmpty)
-                          Text(marcasGrupo.map((m) => m['nombre']).join(', '),
-                            style: const TextStyle(fontSize: 10, color: _grey), maxLines: 1, overflow: TextOverflow.ellipsis),
-                      ])),
-                      const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: _grey),
+                      Text('⭐', style: TextStyle(fontSize: 14)),
+                      SizedBox(width: 6),
+                      Text('Tus rubros principales',
+                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: _dark)),
                     ]),
                   ),
-                );
-              },
+                  ..._rubrosPrincipales.map((r) {
+                    final colorHex = (r['color_hex'] as String? ?? 'E07B00').replaceAll('#', '');
+                    final color = Color(int.parse('0xFF$colorHex'));
+                    return GestureDetector(
+                      onTap: () => Navigator.push(context, MaterialPageRoute(
+                        builder: (_) => _CatalogoMaestroConRubro(rubro: r, onActualizado: _cargar),
+                      )),
+                      child: Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+                        decoration: BoxDecoration(
+                          color: color.withValues(alpha: 0.06),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: color.withValues(alpha: 0.4), width: 1.5),
+                        ),
+                        child: Row(children: [
+                          Text(r['icono_emoji'] as String? ?? '📦', style: const TextStyle(fontSize: 22)),
+                          const SizedBox(width: 12),
+                          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                            Text(r['nombre'] as String? ?? '',
+                              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: _dark)),
+                            Text('Ver productos de este rubro',
+                              style: TextStyle(fontSize: 10, color: color, fontWeight: FontWeight.w600)),
+                          ])),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(8)),
+                            child: const Text('PRINCIPAL',
+                              style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: Colors.white)),
+                          ),
+                          const SizedBox(width: 6),
+                          Icon(Icons.arrow_forward_ios_rounded, size: 14, color: color),
+                        ]),
+                      ),
+                    );
+                  }),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 10),
+                    child: Row(children: [
+                      Expanded(child: Divider()),
+                      Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 10),
+                        child: Text('Todos los grupos', style: TextStyle(fontSize: 11, color: _grey, fontWeight: FontWeight.w600)),
+                      ),
+                      Expanded(child: Divider()),
+                    ]),
+                  ),
+                ],
+                // ── Todos los grupos del catálogo maestro ──
+                ..._filtrados.map((g) {
+                  final grupoId = g['id'] as int;
+                  final marcasGrupo = _misMarcas.where((m) {
+                    final gid = m['grupo_id'];
+                    return gid != null && (gid is int ? gid : int.tryParse(gid.toString())) == grupoId;
+                  }).toList();
+                  return GestureDetector(
+                    onTap: () => Navigator.push(context, MaterialPageRoute(
+                      builder: (_) => _PantallaEleccionMarca(
+                        grupo: g,
+                        marcasGrupo: marcasGrupo,
+                        todasMisMarcas: _misMarcas,
+                        misMarcasNombres: _misMarcasNombres,
+                        onCatalogoActualizado: _cargar,
+                      ),
+                    )),
+                    child: Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey.shade200),
+                      ),
+                      child: Row(children: [
+                        Text(g['icono'] ?? '📦', style: const TextStyle(fontSize: 22)),
+                        const SizedBox(width: 12),
+                        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          Text(g['nombre'], style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: _dark)),
+                          if (marcasGrupo.isNotEmpty)
+                            Text(marcasGrupo.map((m) => m['nombre']).join(', '),
+                              style: const TextStyle(fontSize: 10, color: _grey), maxLines: 1, overflow: TextOverflow.ellipsis),
+                        ])),
+                        const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: _grey),
+                      ]),
+                    ),
+                  );
+                }),
+              ],
             ),
       ),
     ]);
@@ -338,12 +414,14 @@ class _MarcasGrupoLoaderState extends State<_MarcasGrupoLoader> {
 // ─────────────────────────────────────────────────────────────────────────────
 class _PantallaProductosGrupoMarca extends StatefulWidget {
   final dynamic grupo;
-  final String? marcaNombre; // null = todos los productos del grupo
+  final String? marcaNombre; // null = todos los productos
+  final int? rubroId;        // si viene de un rubro, filtra por él
 
   const _PantallaProductosGrupoMarca({
     super.key,
     required this.grupo,
     required this.marcaNombre,
+    this.rubroId,
   });
 
   @override
@@ -359,9 +437,10 @@ class _PantallaProductosGrupoMarcaState extends State<_PantallaProductosGrupoMar
   void initState() { super.initState(); _cargar(); }
 
   Future<void> _cargar() async {
-    // Cargar productos del catálogo maestro filtrados por nombre de marca
+    // Cargar productos del catálogo maestro filtrados por marca y/o rubro
     final res = await ApiService.buscarCatalogoPagina(
       marcaNombre: widget.marcaNombre,
+      rubroId: widget.rubroId,
       limit: 100,
       offset: 0,
     );
@@ -533,4 +612,198 @@ class _PantallaProductosGrupoMarcaState extends State<_PantallaProductosGrupoMar
     color: Colors.grey.shade100,
     child: const Icon(Icons.inventory_2_outlined, color: Colors.grey),
   );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PANTALLA — Marcas de un rubro específico (al tocar un rubro principal)
+// ─────────────────────────────────────────────────────────────────────────────
+class _CatalogoMaestroConRubro extends StatefulWidget {
+  final dynamic rubro;
+  final VoidCallback onActualizado;
+  const _CatalogoMaestroConRubro({required this.rubro, required this.onActualizado});
+  @override
+  State<_CatalogoMaestroConRubro> createState() => _CatalogoMaestroConRubroState();
+}
+
+class _CatalogoMaestroConRubroState extends State<_CatalogoMaestroConRubro> {
+  List<dynamic> _marcas = [];
+  Set<String> _misMarcasNombres = {};
+  bool _cargando = true;
+
+  @override
+  void initState() { super.initState(); _cargar(); }
+
+  Future<void> _cargar() async {
+    final rubroId = widget.rubro['rubro_id'] ?? widget.rubro['id'];
+    final m = await ApiService.get('/marcas/por-rubro/$rubroId');
+    final misProd = await ApiService.misProductos();
+    if (!mounted) return;
+    final raw = m['data'];
+    setState(() {
+      _marcas = raw is Map && raw['data'] is List ? raw['data'] as List
+              : raw is List ? raw : [];
+      _misMarcasNombres = misProd
+        .map((p) => ((p['marca'] as String?) ?? '').toLowerCase().trim())
+        .where((s) => s.isNotEmpty)
+        .toSet();
+      _cargando = false;
+    });
+    widget.onActualizado();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorHex = (widget.rubro['color_hex'] as String? ?? 'E07B00').replaceAll('#', '');
+    final color = Color(int.parse('0xFF$colorHex'));
+    final nombreRubro = widget.rubro['nombre'] as String? ?? '';
+    final emoji = widget.rubro['icono_emoji'] as String? ?? '📦';
+
+    // Construimos un "grupo" virtual para reusar _PantallaEleccionMarca
+    final grupoVirtual = {'id': -1, 'nombre': nombreRubro, 'icono': emoji};
+
+    return Scaffold(
+      backgroundColor: _bg,
+      appBar: AppBar(
+        backgroundColor: color,
+        foregroundColor: Colors.white,
+        title: Row(children: [
+          Text(emoji, style: const TextStyle(fontSize: 20)),
+          const SizedBox(width: 8),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(nombreRubro, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
+            const Text('Elegí una marca', style: TextStyle(fontSize: 10, color: Colors.white70)),
+          ])),
+        ]),
+      ),
+      body: _cargando
+        ? const Center(child: CircularProgressIndicator(color: _amber))
+        : _marcas.isEmpty
+          ? Center(child: Padding(
+              padding: const EdgeInsets.all(32),
+              child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                Text(emoji, style: const TextStyle(fontSize: 48)),
+                const SizedBox(height: 16),
+                Text('No hay marcas cargadas para "$nombreRubro" todavía.',
+                  style: const TextStyle(fontSize: 13, color: _grey), textAlign: TextAlign.center),
+                const SizedBox(height: 12),
+                const Text('Podés buscar productos desde "Todos los grupos" en el Catálogo maestro.',
+                  style: TextStyle(fontSize: 11, color: _grey), textAlign: TextAlign.center),
+              ]),
+            ))
+          : ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                // Opción "Todos los productos del rubro"
+                GestureDetector(
+                  onTap: () async {
+                    await Navigator.push(context, MaterialPageRoute(
+                      builder: (_) => _PantallaProductosGrupoMarca(
+                        grupo: grupoVirtual,
+                        marcaNombre: null,
+                        rubroId: widget.rubro['rubro_id'] as int? ?? widget.rubro['id'] as int?,
+                      ),
+                    ));
+                    _cargar();
+                  },
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 10),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.06),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: color.withValues(alpha: 0.4), width: 1.5),
+                    ),
+                    child: Row(children: [
+                      Text(emoji, style: const TextStyle(fontSize: 22)),
+                      const SizedBox(width: 12),
+                      Expanded(child: Text('Todos los productos de $nombreRubro',
+                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: _dark))),
+                      Icon(Icons.arrow_forward_ios_rounded, size: 14, color: color),
+                    ]),
+                  ),
+                ),
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 6),
+                  child: Row(children: [
+                    Expanded(child: Divider()),
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 10),
+                      child: Text('Por marca', style: TextStyle(fontSize: 11, color: _grey, fontWeight: FontWeight.w600)),
+                    ),
+                    Expanded(child: Divider()),
+                  ]),
+                ),
+                ..._marcas.map((m) {
+                  final nombre = m['nombre'] as String;
+                  final enCatalogo = _misMarcasNombres.contains(nombre.toLowerCase().trim());
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: GestureDetector(
+                      onTap: () async {
+                        await Navigator.push(context, MaterialPageRoute(
+                          builder: (_) => _PantallaProductosGrupoMarca(
+                            grupo: grupoVirtual,
+                            marcaNombre: nombre,
+                            rubroId: widget.rubro['rubro_id'] as int? ?? widget.rubro['id'] as int?,
+                          ),
+                        ));
+                        _cargar();
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: enCatalogo ? _green.withValues(alpha: 0.35) : Colors.grey.shade200,
+                            width: enCatalogo ? 1.5 : 1,
+                          ),
+                        ),
+                        child: Row(children: [
+                          Container(
+                            width: 42, height: 42,
+                            decoration: BoxDecoration(
+                              color: enCatalogo ? _green.withValues(alpha: 0.08) : _bg,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Center(child: Text('🏷️', style: TextStyle(fontSize: 20))),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                            Text(nombre, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: _dark)),
+                            if (enCatalogo)
+                              const Text('Tenés productos cargados', style: TextStyle(fontSize: 10, color: _green)),
+                          ])),
+                          const SizedBox(width: 8),
+                          if (enCatalogo)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: _green.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: _green.withValues(alpha: 0.4)),
+                              ),
+                              child: const Text('✓ En mi\ncatálogo', textAlign: TextAlign.center,
+                                style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: _green)),
+                            )
+                          else
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: _amber.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: _amber.withValues(alpha: 0.5)),
+                              ),
+                              child: const Text('+ Agregar', textAlign: TextAlign.center,
+                                style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: _amber)),
+                            ),
+                        ]),
+                      ),
+                    ),
+                  );
+                }),
+              ],
+            ),
+    );
+  }
 }

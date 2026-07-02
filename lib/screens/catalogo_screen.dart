@@ -26,6 +26,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
   List<dynamic> _categorias = [];
   List<dynamic> _misProductos = [];
   List<dynamic> _misMarcas = [];
+  List<dynamic> _rubrosComercio = [];
   String? _marcaFiltroMisProductos; // marca seleccionada en "Mi catálogo"
   String _busquedaMiCatalogo = '';
   final _busMiCatCtrl = TextEditingController();
@@ -54,11 +55,14 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
   }
 
   Future<void> _cargarMisMarcas() async {
-    final res = await ApiService.get('/marcas/mis-marcas');
+    final resMarcas = await ApiService.get('/marcas/mis-marcas');
+    final resRubros = await ApiService.get('/rubros/comercio');
     if (!mounted) return;
-    final marcas = res['data'] is List ? res['data'] as List : [];
+    final marcas = resMarcas['data'] is List ? resMarcas['data'] as List : [];
     setState(() {
       _misMarcas = marcas;
+      _rubrosComercio = resRubros['status'] == 200 && resRubros['data'] is List
+          ? resRubros['data'] as List : [];
       // Si no tiene marcas configuradas, ir directo al catálogo completo
       if (marcas.isEmpty) _vistaSeleccionMarca = false;
     });
@@ -211,7 +215,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
           child: _selectorVista(),
         ),
-        Expanded(child: CatalogoPorRubrosScreen(comercioId: widget.comercioId)),
+        Expanded(child: CatalogoPorRubrosScreen(key: UniqueKey(), comercioId: widget.comercioId)),
       ]);
     }
 
@@ -317,18 +321,41 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
     ]);
   }
 
-  // Grilla de marcas dentro de "Mi catálogo"
+  // Grilla de marcas dentro de "Mi catálogo" — rubros principales primero
   Widget _buildGridMarcasMiCatalogo() {
-    // Agrupar por rubro → marca
-    final Map<String, Map<String, List<dynamic>>> porRubroMarca = {};
+    // Rubros principales del comercio (ordenados)
+    final principales = _rubrosComercio
+        .where((r) => r['tipo'] == 'principal')
+        .toList()
+      ..sort((a, b) => (a['orden'] as int).compareTo(b['orden'] as int));
+    final idsRubroPrincipal = principales.map((r) => r['rubro_id'] as int).toSet();
+
+    // Agrupar por rubro_id → marca
+    final Map<int?, Map<String, List<dynamic>>> porRubroId = {};
     for (final p in _misProductos) {
-      final rubro = (p['grupo_nombre'] as String? ?? 'Otros').trim();
+      final rid = p['rubro_id'] as int?;
       final marca = (p['marca'] as String? ?? 'Sin marca').trim();
-      porRubroMarca.putIfAbsent(rubro, () => {});
-      porRubroMarca[rubro]!.putIfAbsent(marca, () => []).add(p);
+      porRubroId.putIfAbsent(rid, () => {});
+      porRubroId[rid]!.putIfAbsent(marca, () => []).add(p);
     }
-    final rubros = porRubroMarca.keys.toList()..sort();
-    final totalMarcas = porRubroMarca.values.fold(0, (s, m) => s + m.length);
+
+    // También agrupar por grupo_nombre para los que no tienen rubro_id o no son principales
+    final Map<String, Map<String, List<dynamic>>> porGrupoMarca = {};
+    for (final p in _misProductos) {
+      final rid = p['rubro_id'] as int?;
+      if (rid != null && idsRubroPrincipal.contains(rid)) continue; // ya aparece en sección principal
+      final grupo = (p['grupo_nombre'] as String? ?? 'Otros').trim();
+      final marca = (p['marca'] as String? ?? 'Sin marca').trim();
+      porGrupoMarca.putIfAbsent(grupo, () => {});
+      porGrupoMarca[grupo]!.putIfAbsent(marca, () => []).add(p);
+    }
+    final gruposRestantes = porGrupoMarca.keys.toList()..sort();
+
+    final totalMarcas = (() {
+      final allMarcas = <String>{};
+      for (final p in _misProductos) allMarcas.add((p['marca'] as String? ?? '').trim());
+      return allMarcas.length;
+    })();
 
     final items = <Widget>[];
     items.add(Padding(
@@ -337,51 +364,128 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
         style: const TextStyle(fontSize: 12, color: Color(0xFF888888), fontWeight: FontWeight.w600)),
     ));
 
-    for (final rubro in rubros) {
-      final marcasDelRubro = porRubroMarca[rubro]!;
-      // Título del rubro
-      items.add(Padding(
-        padding: const EdgeInsets.fromLTRB(2, 8, 2, 8),
-        child: Text(rubro,
-          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900,
-            color: Color(0xFF1E3A5F), letterSpacing: 0.2)),
+    // ── SECCIÓN: Rubros principales (fijos arriba) ──
+    if (principales.isNotEmpty) {
+      items.add(const Padding(
+        padding: EdgeInsets.fromLTRB(2, 0, 2, 8),
+        child: Row(children: [
+          Text('⭐', style: TextStyle(fontSize: 13)),
+          SizedBox(width: 6),
+          Text('Tus rubros principales',
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: Color(0xFF1A1A1A))),
+        ]),
       ));
-      // Tarjetas de marcas
-      for (final marca in marcasDelRubro.keys.toList()..sort()) {
-        final prods = marcasDelRubro[marca]!;
-        final activos = prods.where((p) => p['activo'] == true).length;
-        items.add(GestureDetector(
-          onTap: () => setState(() => _marcaFiltroMisProductos = marca),
+      for (final rubro in principales) {
+        final rubroId = rubro['rubro_id'] as int;
+        final colorHex = (rubro['color_hex'] as String? ?? 'E07B00').replaceAll('#', '');
+        final color = Color(int.parse('0xFF$colorHex'));
+        final emoji = rubro['icono_emoji'] as String? ?? '📦';
+        final nombre = rubro['nombre'] as String? ?? '';
+        final marcasRubro = porRubroId[rubroId] ?? {};
+        final totalProds = marcasRubro.values.fold(0, (s, l) => s + l.length);
+
+        // Cabecera del rubro principal
+        items.add(Padding(
+          padding: const EdgeInsets.fromLTRB(0, 4, 0, 6),
           child: Container(
-            margin: const EdgeInsets.only(bottom: 8),
-            padding: const EdgeInsets.all(14),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey.shade200),
-              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 4)],
+              color: color.withOpacity(0.07),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: color.withOpacity(0.3)),
             ),
             child: Row(children: [
-              Container(
-                width: 44, height: 44,
-                decoration: BoxDecoration(color: const Color(0xFF1E3A5F).withOpacity(0.08), borderRadius: BorderRadius.circular(10)),
-                child: const Center(child: Text('🏷️', style: TextStyle(fontSize: 22))),
-              ),
-              const SizedBox(width: 12),
-              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(marca, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: Color(0xFF1A1A1A))),
-                const SizedBox(height: 2),
-                Text('$activos activo${activos == 1 ? '' : 's'} · ${prods.length} producto${prods.length == 1 ? '' : 's'}',
-                  style: const TextStyle(fontSize: 11, color: Color(0xFF888888))),
-              ])),
-              const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Color(0xFF888888)),
+              Text(emoji, style: const TextStyle(fontSize: 18)),
+              const SizedBox(width: 8),
+              Expanded(child: Text(nombre,
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: color))),
+              if (totalProds > 0)
+                Text('$totalProds producto${totalProds == 1 ? '' : 's'}',
+                  style: TextStyle(fontSize: 10, color: color, fontWeight: FontWeight.w600)),
             ]),
           ),
+        ));
+
+        if (marcasRubro.isEmpty) {
+          items.add(Padding(
+            padding: const EdgeInsets.only(bottom: 10, left: 4),
+            child: Text('Sin productos cargados en este rubro',
+              style: const TextStyle(fontSize: 11, color: Color(0xFF888888))),
+          ));
+        } else {
+          for (final marca in marcasRubro.keys.toList()..sort()) {
+            final prods = marcasRubro[marca]!;
+            final activos = prods.where((p) => p['activo'] == true).length;
+            items.add(_cardMarca(marca, prods.length, activos, color));
+          }
+        }
+        items.add(const SizedBox(height: 4));
+      }
+
+      // Divider antes de "el resto"
+      if (porGrupoMarca.isNotEmpty) {
+        items.add(const Padding(
+          padding: EdgeInsets.symmetric(vertical: 10),
+          child: Row(children: [
+            Expanded(child: Divider()),
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 10),
+              child: Text('Otros productos', style: TextStyle(fontSize: 11, color: Color(0xFF888888), fontWeight: FontWeight.w600)),
+            ),
+            Expanded(child: Divider()),
+          ]),
         ));
       }
     }
 
+    // ── SECCIÓN: Resto de grupos (los que no son rubros principales) ──
+    for (final grupo in gruposRestantes) {
+      final marcasGrupo = porGrupoMarca[grupo]!;
+      items.add(Padding(
+        padding: const EdgeInsets.fromLTRB(2, 8, 2, 8),
+        child: Text(grupo,
+          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900,
+            color: Color(0xFF1E3A5F), letterSpacing: 0.2)),
+      ));
+      for (final marca in marcasGrupo.keys.toList()..sort()) {
+        final prods = marcasGrupo[marca]!;
+        final activos = prods.where((p) => p['activo'] == true).length;
+        items.add(_cardMarca(marca, prods.length, activos, const Color(0xFF1E3A5F)));
+      }
+    }
+
     return ListView(padding: const EdgeInsets.all(12), children: items);
+  }
+
+  Widget _cardMarca(String marca, int total, int activos, Color accentColor) {
+    return GestureDetector(
+      onTap: () => setState(() => _marcaFiltroMisProductos = marca),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.shade200),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 4)],
+        ),
+        child: Row(children: [
+          Container(
+            width: 44, height: 44,
+            decoration: BoxDecoration(color: accentColor.withOpacity(0.08), borderRadius: BorderRadius.circular(10)),
+            child: const Center(child: Text('🏷️', style: TextStyle(fontSize: 22))),
+          ),
+          const SizedBox(width: 12),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(marca, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: Color(0xFF1A1A1A))),
+            const SizedBox(height: 2),
+            Text('$activos activo${activos == 1 ? '' : 's'} · $total producto${total == 1 ? '' : 's'}',
+              style: const TextStyle(fontSize: 11, color: Color(0xFF888888))),
+          ])),
+          const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Color(0xFF888888)),
+        ]),
+      ),
+    );
   }
 
   // Resultados de búsqueda en Mi catálogo

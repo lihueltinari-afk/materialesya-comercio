@@ -221,7 +221,7 @@ class ApiService {
   /// productos con offset creciente a medida que el usuario llega al final de la lista).
   /// Devuelve {'productos': [...], 'hayMas': bool}.
   static Future<Map<String, dynamic>> buscarCatalogoPagina({
-    String busqueda = '', int? categoriaId, int? marcaId, String? marcaNombre, int? subcategoriaId, int limit = 24, int offset = 0,
+    String busqueda = '', int? categoriaId, int? marcaId, String? marcaNombre, int? subcategoriaId, int? rubroId, int limit = 24, int offset = 0,
   }) async {
     var query = '?limit=$limit&offset=$offset';
     if (busqueda.isNotEmpty) query += '&busqueda=${Uri.encodeComponent(busqueda)}';
@@ -229,6 +229,7 @@ class ApiService {
     if (marcaNombre != null && marcaNombre.isNotEmpty) query += '&marca_nombre=${Uri.encodeComponent(marcaNombre)}';
     else if (marcaId != null) query += '&marca_id=$marcaId';
     if (subcategoriaId != null) query += '&subcategoria_id=$subcategoriaId';
+    if (rubroId != null) query += '&rubro_id=$rubroId';
     final res = await get('/catalogo-maestro$query');
     if (res['status'] == 200) {
       final data = res['data'];

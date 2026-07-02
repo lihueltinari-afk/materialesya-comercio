@@ -16,6 +16,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Map<String, dynamic>? _comercio;
   Map<String, dynamic>? _estadisticas;
   List<dynamic> _pedidosPendientes = [];
+  List<dynamic> _datosSemanales = [];
   bool _cargando = true;
   bool _procesandoToggle = false;
   Timer? _timer;
@@ -49,12 +50,19 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _cargarEstadisticas() async {
     try {
-      final est = await ApiService.estadisticasHoy();
-      final pedidos = await ApiService.pedidosDelComercio(0, estado: 'pendiente');
+      final results = await Future.wait([
+        ApiService.estadisticasHoy(),
+        ApiService.pedidosDelComercio(0, estado: 'pendiente'),
+        ApiService.get('/comercio/estadisticas/semana'),
+      ]);
       if (!mounted) return;
       setState(() {
-        _estadisticas = est;
+        _estadisticas = results[0] as Map<String, dynamic>?;
+        final pedidos = results[1] as List<dynamic>;
         _pedidosPendientes = pedidos.length > 3 ? pedidos.sublist(0, 3) : pedidos;
+        _datosSemanales = (results[2] as Map<String, dynamic>)['data'] is List
+            ? (results[2] as Map<String, dynamic>)['data'] as List<dynamic>
+            : [];
       });
     } catch (_) {}
   }
@@ -240,6 +248,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   const SizedBox(height: 16),
 
+                  // Gráfico semanal
+                  if (_datosSemanales.isNotEmpty) ...[
+                    const Text('Esta semana', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: kAzul)),
+                    const SizedBox(height: 8),
+                    _GraficoBarras(datos: _datosSemanales),
+                    const SizedBox(height: 16),
+                  ],
+
                   // Pedidos pendientes
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -334,5 +350,126 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
     );
+  }
+}
+
+// ─── GRÁFICO DE BARRAS SEMANAL ────────────────────────────────────────────────
+class _GraficoBarras extends StatefulWidget {
+  final List<dynamic> datos;
+  const _GraficoBarras({required this.datos});
+  @override
+  State<_GraficoBarras> createState() => _GraficoBarrasState();
+}
+
+class _GraficoBarrasState extends State<_GraficoBarras> {
+  // 0=ingresos, 1=pedidos
+  int _metrica = 0;
+
+  static const _dias = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
+
+  @override
+  Widget build(BuildContext context) {
+    final datos = widget.datos;
+    final valores = datos.map((d) {
+      if (_metrica == 0) return (num.tryParse(d['ingresos'].toString()) ?? 0).toDouble();
+      return (num.tryParse(d['total_pedidos'].toString()) ?? 0).toDouble();
+    }).toList();
+    final maxVal = valores.isEmpty ? 1.0 : (valores.reduce((a, b) => a > b ? a : b));
+    final maxDisplay = maxVal == 0 ? 1.0 : maxVal;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          // Selector
+          Row(children: [
+            _chip('Ingresos', 0),
+            const SizedBox(width: 8),
+            _chip('Pedidos', 1),
+            const Spacer(),
+            if (maxVal > 0)
+              Text(
+                _metrica == 0
+                    ? 'Total: \$${valores.reduce((a, b) => a + b).toStringAsFixed(0)}'
+                    : 'Total: ${valores.reduce((a, b) => a + b).toStringAsFixed(0)} pedidos',
+                style: const TextStyle(fontSize: 11, color: Colors.grey),
+              ),
+          ]),
+          const SizedBox(height: 16),
+          // Barras
+          SizedBox(
+            height: 120,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: List.generate(datos.length, (i) {
+                final val = valores[i];
+                final ratio = maxDisplay == 0 ? 0.0 : val / maxDisplay;
+                final fecha = datos[i]['fecha']?.toString() ?? '';
+                final diasem = _diaSemana(fecha);
+                return Expanded(child: Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    if (val > 0)
+                      Text(
+                        _metrica == 0 ? '\$${_fmt(val)}' : '${val.toInt()}',
+                        style: const TextStyle(fontSize: 8, color: Colors.grey),
+                        textAlign: TextAlign.center,
+                      ),
+                    const SizedBox(height: 2),
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 400),
+                      curve: Curves.easeOut,
+                      height: ratio * 90,
+                      margin: const EdgeInsets.symmetric(horizontal: 3),
+                      decoration: BoxDecoration(
+                        color: _esHoy(fecha) ? kNaranja : kNaranja.withOpacity(0.35),
+                        borderRadius: const BorderRadius.vertical(top: Radius.circular(5)),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(diasem, style: TextStyle(fontSize: 10,
+                      fontWeight: _esHoy(fecha) ? FontWeight.bold : FontWeight.normal,
+                      color: _esHoy(fecha) ? kNaranja : Colors.grey)),
+                  ],
+                ));
+              }),
+            ),
+          ),
+        ]),
+      ),
+    );
+  }
+
+  Widget _chip(String label, int idx) => GestureDetector(
+    onTap: () => setState(() => _metrica = idx),
+    child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: _metrica == idx ? kNaranja : Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(label, style: TextStyle(
+        fontSize: 11, fontWeight: FontWeight.w600,
+        color: _metrica == idx ? Colors.white : Colors.grey)),
+    ),
+  );
+
+  String _diaSemana(String fecha) {
+    try {
+      final dt = DateTime.parse(fecha);
+      return _dias[dt.weekday - 1];
+    } catch (_) { return '?'; }
+  }
+
+  bool _esHoy(String fecha) {
+    final hoy = DateTime.now();
+    final s = '${hoy.year}-${hoy.month.toString().padLeft(2, '0')}-${hoy.day.toString().padLeft(2, '0')}';
+    return fecha.startsWith(s);
+  }
+
+  String _fmt(double v) {
+    if (v >= 1000000) return '${(v/1000000).toStringAsFixed(1)}M';
+    if (v >= 1000) return '${(v/1000).toStringAsFixed(0)}k';
+    return v.toStringAsFixed(0);
   }
 }

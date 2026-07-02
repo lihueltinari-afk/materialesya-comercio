@@ -25,6 +25,7 @@ class _PerfilScreenState extends State<PerfilScreen> with WidgetsBindingObserver
   bool _conectandoMp = false;
 
   final _nombreCtrl = TextEditingController();
+  int _tiempoEntrega = 60;
   final _direccionCtrl = TextEditingController();
   final _telefonoCtrl = TextEditingController();
   final _cbuCtrl = TextEditingController();
@@ -162,6 +163,7 @@ class _PerfilScreenState extends State<PerfilScreen> with WidgetsBindingObserver
           _logoUrl = comercio['logo_url'];
           _bannerUrl = comercio['banner_url'];
           _repartoPropio = comercio['reparto_propio'] == true;
+          _tiempoEntrega = int.tryParse(comercio['tiempo_entrega_estimado']?.toString() ?? '60') ?? 60;
           final radio = comercio['radio_entrega_km'];
           if (radio != null) {
             _radioEntrega = double.tryParse(radio.toString()) ?? 5;
@@ -215,6 +217,7 @@ class _PerfilScreenState extends State<PerfilScreen> with WidgetsBindingObserver
       'cuit': _cuitCtrl.text.trim(),
       'radio_entrega_km': _radioEntrega.round(),
       'reparto_propio': _repartoPropio,
+      'tiempo_entrega_estimado': _tiempoEntrega,
     });
 
     if (!mounted) return;
@@ -477,6 +480,29 @@ class _PerfilScreenState extends State<PerfilScreen> with WidgetsBindingObserver
                           activeColor: kNaranja,
                           label: '${_radioEntrega.round()} km',
                           onChanged: (v) => setState(() => _radioEntrega = v),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text('Tiempo de entrega estimado:', style: TextStyle(fontWeight: FontWeight.w600)),
+                            Text(
+                              _tiempoEntrega < 60
+                                  ? '$_tiempoEntrega min'
+                                  : _tiempoEntrega == 60 ? '1 hora'
+                                  : '${(_tiempoEntrega / 60).toStringAsFixed(1).replaceAll('.0', '')} hs',
+                              style: const TextStyle(fontWeight: FontWeight.bold, color: kNaranja),
+                            ),
+                          ],
+                        ),
+                        Slider(
+                          value: _tiempoEntrega.toDouble(),
+                          min: 15,
+                          max: 180,
+                          divisions: 11,
+                          activeColor: kNaranja,
+                          label: '$_tiempoEntrega min',
+                          onChanged: (v) => setState(() => _tiempoEntrega = v.round()),
                         ),
                         const SizedBox(height: 8),
                         SwitchListTile(

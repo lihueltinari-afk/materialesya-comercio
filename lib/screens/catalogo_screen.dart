@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../services/api_service.dart';
 import 'carga_masiva_screen.dart';
+import 'excel_precios_screen.dart';
 import 'marcas_screen.dart';
 import 'catalogo_navegacion_screen.dart';
 import 'catalogo_por_rubros_screen.dart';
@@ -27,6 +28,8 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
   List<dynamic> _misProductos = [];
   List<dynamic> _misMarcas = [];
   List<dynamic> _rubrosComercio = [];
+  String _modoComisionGlobal = 'absorber';
+  bool _porProductoComision = false;
   String? _marcaFiltroMisProductos; // marca seleccionada en "Mi catálogo"
   String _busquedaMiCatalogo = '';
   final _busMiCatCtrl = TextEditingController();
@@ -57,12 +60,18 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
   Future<void> _cargarMisMarcas() async {
     final resMarcas = await ApiService.get('/marcas/mis-marcas');
     final resRubros = await ApiService.get('/rubros/comercio');
+    final resComision = await ApiService.get('/comercio/config-comision');
     if (!mounted) return;
     final marcas = resMarcas['data'] is List ? resMarcas['data'] as List : [];
     setState(() {
       _misMarcas = marcas;
       _rubrosComercio = resRubros['status'] == 200 && resRubros['data'] is List
           ? resRubros['data'] as List : [];
+      if (resComision['status'] == 200 && resComision['data'] is Map) {
+        final d = resComision['data'] as Map;
+        _modoComisionGlobal = d['modo_comision_global'] as String? ?? 'absorber';
+        _porProductoComision = d['comision_por_producto'] == true;
+      }
       // Si no tiene marcas configuradas, ir directo al catálogo completo
       if (marcas.isEmpty) _vistaSeleccionMarca = false;
     });
@@ -233,6 +242,16 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
           Row(children: [
             Expanded(child: _selectorVista()),
             const SizedBox(width: 8),
+            TextButton.icon(
+              onPressed: () async {
+                await Navigator.push(context, MaterialPageRoute(builder: (_) => const ExcelPreciosScreen()));
+                _cargarMisProductos();
+              },
+              icon: const Icon(Icons.auto_awesome, size: 14, color: Color(0xFF6A1B9A)),
+              label: const Text('Excel IA', style: TextStyle(fontSize: 11, color: Color(0xFF6A1B9A), fontWeight: FontWeight.w700)),
+              style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 8), tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+            ),
+            const SizedBox(width: 4),
             TextButton.icon(
               onPressed: () async {
                 await Navigator.push(context, MaterialPageRoute(builder: (_) => const CargaMasivaScreen()));
@@ -581,12 +600,20 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
     );
   }
 
+  double _toDouble(dynamic v) => double.tryParse(v?.toString() ?? '') ?? 0.0;
+
   void _abrirDetalleProducto(Map prod) {
-    final precioCtrl  = TextEditingController(text: '${prod['precio'] ?? ''}');
+    final precioBase = _toDouble(prod['precio_base'] ?? prod['precio']);
+    final precioCtrl  = TextEditingController(text: precioBase > 0 ? precioBase.toInt().toString() : '');
     final stockCtrl   = TextEditingController(text: '${prod['stock'] ?? ''}');
-    final ofertaCtrl  = TextEditingController(text: '${prod['precio_oferta'] ?? ''}');
+    final ofertaCtrl  = TextEditingController(text: '${_toDouble(prod['precio_oferta']) > 0 ? _toDouble(prod['precio_oferta']).toInt() : ''}');
     bool activo        = prod['activo'] == true;
     bool ofertaActiva  = prod['oferta_activa'] == true;
+    // Comisión: usa config individual si no es null, sino usa la global del comercio
+    final trasladarGlobal = _rubrosComercio.isNotEmpty; // dummy — se leerá de config
+    bool trasladarComision = prod['trasladar_comision'] == true ||
+        (prod['trasladar_comision'] == null && _modoComisionGlobal == 'trasladar');
+    bool configIndividual = prod['trasladar_comision'] != null && _porProductoComision;
     DateTime? ofertaHasta = prod['oferta_hasta'] != null
       ? DateTime.tryParse(prod['oferta_hasta'].toString()) : null;
 
@@ -624,13 +651,66 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
             ]),
             const SizedBox(height: 12),
 
-            // Precio normal
-            const Text('Precio de venta (\$)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+            // Precio que carga el comercio
+            const Text('Precio que cargás (\$)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
             const SizedBox(height: 6),
-            TextField(controller: precioCtrl, keyboardType: TextInputType.number,
+            TextField(
+              controller: precioCtrl,
+              keyboardType: TextInputType.number,
+              onChanged: (_) => setModal(() {}), // rebuildea para actualizar preview
               decoration: InputDecoration(prefixText: '\$ ', filled: true, fillColor: Colors.grey.shade50,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)))),
-            const SizedBox(height: 12),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10))),
+            ),
+            const SizedBox(height: 10),
+
+            // Toggle comisión (si está habilitado por producto)
+            if (_porProductoComision) ...[
+              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  const Text('Trasladar comisión al cliente',
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+                  Text(
+                    configIndividual ? 'Config. individual' : 'Usando config. global ($_modoComisionGlobal)',
+                    style: TextStyle(fontSize: 10, color: Colors.grey.shade600)),
+                ])),
+                Switch(
+                  value: trasladarComision,
+                  activeColor: _amber,
+                  onChanged: (v) => setModal(() { trasladarComision = v; configIndividual = true; }),
+                ),
+              ]),
+              const SizedBox(height: 6),
+            ],
+
+            // Preview precio publicado en tiempo real
+            Builder(builder: (_) {
+              final base = double.tryParse(precioCtrl.text) ?? 0;
+              final publicado = trasladarComision ? base * 1.10 : base;
+              final recibe = publicado * 0.90;
+              if (base <= 0) return const SizedBox.shrink();
+              return Container(
+                margin: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: trasladarComision ? const Color(0xFFFFF8E1) : const Color(0xFFF0FFF0),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: trasladarComision ? _amber : const Color(0xFF2E7D32), width: 0.8),
+                ),
+                child: Column(children: [
+                  Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                    const Text('💰 El cliente verá:', style: TextStyle(fontSize: 11)),
+                    Text('\$${publicado.toInt()}',
+                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: _amber)),
+                  ]),
+                  const SizedBox(height: 3),
+                  Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                    const Text('✅ Vos recibís:', style: TextStyle(fontSize: 11)),
+                    Text('\$${recibe.toInt()}',
+                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF2E7D32))),
+                  ]),
+                ]),
+              );
+            }),
 
             // Stock
             const Text('Stock disponible', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
@@ -717,19 +797,27 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                 style: ElevatedButton.styleFrom(backgroundColor: _amber, foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
                 onPressed: () async {
-                  final precio = double.tryParse(precioCtrl.text);
+                  final precioBase = double.tryParse(precioCtrl.text);
                   final stock  = int.tryParse(stockCtrl.text);
+                  if (precioBase == null || precioBase <= 0) return;
+                  final precioPublicado = trasladarComision ? precioBase * 1.10 : precioBase;
                   final precioOferta = ofertaActiva ? double.tryParse(ofertaCtrl.text) : null;
-                  if (precio == null || precio <= 0) return;
-                  if (ofertaActiva && (precioOferta == null || precioOferta >= precio)) {
+                  if (ofertaActiva && (precioOferta == null || precioOferta >= precioPublicado)) {
                     ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(
-                      content: Text('El precio de oferta debe ser menor al precio normal'),
+                      content: Text('El precio de oferta debe ser menor al precio publicado'),
                       backgroundColor: Colors.red));
                     return;
                   }
                   Navigator.pop(ctx);
+                  // Si la config es individual, llamar endpoint de comisión primero
+                  if (_porProductoComision && configIndividual) {
+                    await ApiService.patch(
+                      '/comercio/productos/${prod['producto_id']}/comision',
+                      {'trasladar_comision': trasladarComision},
+                    );
+                  }
                   await ApiService.patch('/comercio/productos/${prod['producto_id']}', {
-                    'precio': precio,
+                    'precio': precioBase, // backend recalculará precio_publicado
                     if (stock != null) 'stock': stock,
                     'oferta_activa': ofertaActiva,
                     if (precioOferta != null) 'precio_oferta': precioOferta,
@@ -841,7 +929,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
         ClipRRect(
           borderRadius: BorderRadius.circular(8),
           child: prod['imagen_principal_url'] != null
-            ? CachedNetworkImage(imageUrl: prod['imagen_principal_url'], width: 60, height: 60, fit: BoxFit.cover, errorWidget: (_, __, ___) => _placeholder())
+            ? Image.network(prod['imagen_principal_url'], width: 60, height: 60, fit: BoxFit.cover, errorBuilder: (_, __, ___) => _placeholder())
             : _placeholder(),
         ),
         const SizedBox(width: 12),
@@ -936,7 +1024,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
         ClipRRect(
           borderRadius: BorderRadius.circular(8),
           child: prod['imagen_principal_url'] != null
-            ? CachedNetworkImage(imageUrl: prod['imagen_principal_url'], width: 60, height: 60, fit: BoxFit.cover, errorWidget: (_, __, ___) => _placeholder())
+            ? Image.network(prod['imagen_principal_url'], width: 60, height: 60, fit: BoxFit.cover, errorBuilder: (_, __, ___) => _placeholder())
             : _placeholder(),
         ),
         const SizedBox(width: 12),

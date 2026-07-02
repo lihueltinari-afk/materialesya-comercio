@@ -31,14 +31,12 @@ class _CargaMasivaScreenState extends State<CargaMasivaScreen> {
     for (final linea in lineas) {
       final partes = linea.split(',').map((p) => p.trim()).toList();
       if (partes.length < 2) continue;
-      final fila = _filaDesdeColumnas(partes[0], partes.length > 1 ? partes[1] : '', partes.length > 2 ? partes[2] : '');
+      final fila = _filaDesdeColumnas(partes[0], partes.length > 1 ? partes[1] : '', partes.length > 2 ? partes[2] : '', partes.length > 3 ? partes[3] : '');
       if (fila != null) filas.add(fila);
     }
     return filas;
   }
 
-  // Convierte la primera hoja de un Excel en filas {producto_id?, nombre?, precio, stock}.
-  // Misma lógica que el CSV: tolera encabezado, toma columnas A/B/C (0,1,2).
   List<Map<String, dynamic>> _parsearExcel(List<int> bytes) {
     final filas = <Map<String, dynamic>>[];
     final libro = xls.Excel.decodeBytes(bytes);
@@ -49,24 +47,26 @@ class _CargaMasivaScreenState extends State<CargaMasivaScreen> {
       final colA = '${fila[0]?.value ?? ''}'.trim();
       final colB = fila.length > 1 ? '${fila[1]?.value ?? ''}'.trim() : '';
       final colC = fila.length > 2 ? '${fila[2]?.value ?? ''}'.trim() : '';
-      final f = _filaDesdeColumnas(colA, colB, colC);
+      final colD = fila.length > 3 ? '${fila[3]?.value ?? ''}'.trim() : '';
+      final f = _filaDesdeColumnas(colA, colB, colC, colD);
       if (f != null) filas.add(f);
     }
     return filas;
   }
 
-  // Columna A: si es numérica se interpreta como producto_id exacto; si no, como nombre/
-  // descripción en texto libre para que el backend lo matchee por similitud.
-  Map<String, dynamic>? _filaDesdeColumnas(String colA, String colB, String colC) {
+  Map<String, dynamic>? _filaDesdeColumnas(String colA, String colB, String colC, [String colD = '']) {
     if (colA.trim().isEmpty) return null;
     final precio = double.tryParse(colB.replaceAll('\$', '').replaceAll('.', '').replaceAll(',', '.')) ?? double.tryParse(colB);
     if (precio == null) return null; // probablemente fila de encabezado
     final stock = int.tryParse(colC);
     final productoId = int.tryParse(colA);
-    if (productoId != null) {
-      return {'producto_id': productoId, 'precio': precio, 'stock': stock ?? 0};
-    }
-    return {'nombre': colA, 'precio': precio, 'stock': stock ?? 0};
+    final colDUpper = colD.toUpperCase().trim();
+    final trasladar = colDUpper == 'SI' ? true : colDUpper == 'NO' ? false : null;
+    final base = productoId != null
+      ? {'producto_id': productoId, 'precio': precio, 'stock': stock ?? 0}
+      : {'nombre': colA, 'precio': precio, 'stock': stock ?? 0};
+    if (trasladar != null) base['trasladar_comision'] = trasladar;
+    return base;
   }
 
   Future<void> _elegirArchivo() async {
@@ -112,9 +112,9 @@ class _CargaMasivaScreenState extends State<CargaMasivaScreen> {
               const Text('Formato del archivo (CSV o Excel)', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: _textDark)),
               const SizedBox(height: 8),
               const Text(
-                'Una fila por producto, 3 columnas: producto (nombre o ID), precio, stock.\n\n'
-                'CSV: producto,precio,stock\nCemento Loma Negra 50kg,12500,20\n241,3400,15\n\n'
-                'Excel (.xlsx): la misma info en columnas A, B y C de la primera hoja.\n\n'
+                'Una fila por producto, 3 columnas obligatorias + 1 opcional: producto (nombre o ID), precio, stock, trasladar_comision.\n\n'
+                'CSV: producto,precio,stock,trasladar_comision\nCemento Loma Negra 50kg,12500,20,SI\n241,3400,15,NO\n\n'
+                'Excel (.xlsx): la misma info en columnas A, B, C y D (opcional) de la primera hoja.\n\n'
                 'En la columna A podés poner el nombre del producto tal como lo conocés '
                 '(ej: "Cemento Loma Negra 50kg") y el sistema busca solo el producto más parecido '
                 'del catálogo maestro y le actualiza el precio. Si preferís ser exacto, también '
@@ -154,6 +154,17 @@ class _CargaMasivaScreenState extends State<CargaMasivaScreen> {
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text('${_resultado!['actualizados'] ?? 0} productos actualizados ✓',
                 style: const TextStyle(color: _success, fontWeight: FontWeight.w700)),
+              if ((_resultado!['conTraslado'] != null || _resultado!['sinTraslado'] != null)) ...[
+                const SizedBox(height: 10),
+                const Text('Configuración de comisión aplicada:', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
+                const SizedBox(height: 4),
+                if ((_resultado!['conTraslado'] ?? 0) > 0)
+                  Text('• ${_resultado!['conTraslado']} producto(s) trasladando comisión al cliente 🏷️',
+                    style: const TextStyle(fontSize: 11, color: _amber)),
+                if ((_resultado!['sinTraslado'] ?? 0) > 0)
+                  Text('• ${_resultado!['sinTraslado']} producto(s) absorbiendo la comisión 💼',
+                    style: TextStyle(fontSize: 11, color: Colors.grey.shade700)),
+              ],
               if ((_resultado!['coincidencias'] as List?)?.isNotEmpty == true) ...[
                 const SizedBox(height: 8),
                 const Text('Productos encontrados por nombre:', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),

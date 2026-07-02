@@ -10,6 +10,7 @@ import 'login_screen.dart';
 import 'legal_screen.dart';
 import 'mapa_confirmar_ubicacion_screen.dart';
 import 'config_rubros_screen.dart';
+import 'config_comision_screen.dart';
 
 class PerfilScreen extends StatefulWidget {
   const PerfilScreen({super.key});
@@ -660,6 +661,14 @@ class _PerfilScreenState extends State<PerfilScreen> with WidgetsBindingObserver
                       subtitle: const Text('Especialidades de tu negocio'),
                       trailing: const Icon(Icons.chevron_right),
                       onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ConfigRubrosScreen())),
+                    ),
+                    const Divider(height: 1),
+                    ListTile(
+                      leading: const Icon(Icons.percent_rounded, color: AppColors.primary),
+                      title: const Text('Precios y comisiones'),
+                      subtitle: const Text('Cómo manejás la comisión de MaterialesYa'),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ConfigComisionScreen())),
                     ),
                   ]),
                 ),

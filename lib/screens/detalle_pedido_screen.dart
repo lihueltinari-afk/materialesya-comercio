@@ -420,6 +420,22 @@ class _DetallePedidoScreenState extends State<DetallePedidoScreen> {
                       ),
                     ],
                   ),
+                  // Desglose de comisión para el comercio
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF7F7F8),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.grey.shade200),
+                    ),
+                    child: Column(children: [
+                      _filaDesglose('Precio cobrado al cliente', total, Colors.black87),
+                      _filaDesglose('Comisión MaterialesYa (10%)', -(total * 0.10), Colors.red.shade400),
+                      const Divider(height: 12),
+                      _filaDesglose('Lo que recibís vos', total * 0.90, const Color(0xFF2E7D32), bold: true),
+                    ]),
+                  ),
                 ],
               ),
             ),
@@ -609,6 +625,18 @@ class _DetallePedidoScreenState extends State<DetallePedidoScreen> {
           const SizedBox(height: 24),
         ],
       ),
+    );
+  }
+
+  Widget _filaDesglose(String label, double valor, Color color, {bool bold = false}) {
+    final negativo = valor < 0;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+        Text(label, style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+        Text('${negativo ? '-' : ''}\$${valor.abs().toStringAsFixed(0)}',
+          style: TextStyle(fontSize: 12, fontWeight: bold ? FontWeight.w800 : FontWeight.w600, color: color)),
+      ]),
     );
   }
 

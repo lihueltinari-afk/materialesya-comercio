@@ -6,6 +6,7 @@ import 'home_screen.dart';
 import 'pedidos_screen.dart';
 import 'catalogo_screen.dart';
 import 'perfil_screen.dart';
+import 'seleccion_rubros_screen.dart';
 import '../widgets/reporte_error_button.dart';
 import '../widgets/offline_banner.dart';
 
@@ -29,6 +30,22 @@ class _MainScreenState extends State<MainScreen> {
     super.initState();
     _actualizarBadge();
     _timer = Timer.periodic(const Duration(seconds: 30), (_) => _actualizarBadge());
+    // Verificar si el comercio ya configuró sus rubros
+    WidgetsBinding.instance.addPostFrameCallback((_) => _verificarRubros());
+  }
+
+  Future<void> _verificarRubros() async {
+    final res = await ApiService.get('/rubros/comercio');
+    if (!mounted) return;
+    if (res['status'] == 200 && (res['data'] as List).isEmpty) {
+      // No tiene rubros → mostrar pantalla de selección
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const SeleccionRubrosScreen(esRegistro: true),
+        ),
+      );
+    }
   }
 
   @override

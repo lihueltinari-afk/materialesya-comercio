@@ -5,10 +5,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
   static const String _prod = 'https://materialesya-backend-production.up.railway.app/api';
+  static const String _dev = 'http://localhost:3000/api';
+  // MODO DEMO: forzar localhost para testing local
   static String get _base {
     const env = String.fromEnvironment('API_URL', defaultValue: '');
     if (env.isNotEmpty) return env;
-    return kReleaseMode ? _prod : 'http://localhost:3000/api';
+    return _dev;
   }
 
   static String get baseUrlPublico => _base;
@@ -18,9 +20,33 @@ class ApiService {
   static Future<void> _manejarUnauthorized() async {
     if (_sesionExpirandose) return;
     _sesionExpirandose = true;
-    await cerrarSesion();
-    onSesionExpirada?.call();
+    // Intentar renovar el token antes de cerrar sesión
+    final renovado = await _renovarToken();
+    if (!renovado) {
+      await cerrarSesion();
+      onSesionExpirada?.call();
+    }
     Future.delayed(const Duration(seconds: 3), () => _sesionExpirandose = false);
+  }
+
+  static Future<bool> _renovarToken() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final email = prefs.getString('demo_email');
+      final pass = prefs.getString('demo_pass');
+      if (email == null || pass == null) return false;
+      final res = await http.post(
+        Uri.parse('$_base/auth/login'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': email, 'password': pass}),
+      ).timeout(const Duration(seconds: 10));
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body) as Map<String, dynamic>;
+        await guardarSesion(data['token'] as String, Map<String, dynamic>.from(data['usuario'] as Map));
+        return true;
+      }
+    } catch (_) {}
+    return false;
   }
 
   // ─── TOKEN Y SESIÓN ───────────────────────────────────────────────────────────
@@ -45,6 +71,25 @@ class ApiService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('token_comercio');
     await prefs.remove('comercio');
+  }
+
+  static Future<void> loginDemo(String email, String password) async {
+    try {
+      final res = await http.post(
+        Uri.parse('$_base/auth/login'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': email, 'password': password}),
+      );
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body) as Map<String, dynamic>;
+        await guardarSesion(data['token'] as String, Map<String, dynamic>.from(data['usuario'] as Map));
+        // Guardar credenciales para renovación automática de token
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('demo_email', email);
+        await prefs.setString('demo_pass', password);
+        await miComercio();
+      }
+    } catch (_) {}
   }
 
   // ─── COMERCIO LOCAL ──────────────────────────────────────────────────────────

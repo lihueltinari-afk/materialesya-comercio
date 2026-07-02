@@ -131,6 +131,21 @@ class _PedidosScreenState extends State<PedidosScreen> {
     }
   }
 
+  String _formatearProgramada(String iso) {
+    try {
+      final fecha = _parsearFecha(iso);
+      const dias = ['lun','mar','mié','jue','vie','sáb','dom'];
+      const meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+      final dia = dias[fecha.weekday - 1];
+      final mes = meses[fecha.month - 1];
+      final h = fecha.hour.toString().padLeft(2, '0');
+      final m = fecha.minute.toString().padLeft(2, '0');
+      return 'Programado: $dia ${fecha.day} $mes ${fecha.year} $h:$m';
+    } catch (_) {
+      return 'Programado';
+    }
+  }
+
   String _tiempoDesde(String? fechaStr) {
     if (fechaStr == null) return '';
     try {
@@ -239,6 +254,7 @@ class _PedidosScreenState extends State<PedidosScreen> {
     final clienteNombre = pedido['cliente']?['nombre'] ?? pedido['cliente_nombre'] ?? 'Cliente';
     final total = double.tryParse(pedido['total']?.toString() ?? '0') ?? 0;
     final tiempo = _tiempoDesde(pedido['creado_en']?.toString());
+    final entregaProgramada = pedido['entrega_programada']?.toString();
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
@@ -277,6 +293,15 @@ class _PedidosScreenState extends State<PedidosScreen> {
                     if (_horaExacta(pedido['creado_en']?.toString()).isNotEmpty)
                       Text(_horaExacta(pedido['creado_en']?.toString()),
                         style: const TextStyle(color: Colors.grey, fontSize: 11, fontWeight: FontWeight.w600)),
+                    if (entregaProgramada != null) ...[
+                      const SizedBox(height: 2),
+                      Row(children: [
+                        const Icon(Icons.calendar_month_rounded, size: 11, color: Colors.indigo),
+                        const SizedBox(width: 3),
+                        Text(_formatearProgramada(entregaProgramada),
+                          style: const TextStyle(color: Colors.indigo, fontSize: 11, fontWeight: FontWeight.w700)),
+                      ]),
+                    ],
                     if (estado == 'pendiente' && _tiempoRestanteParaAceptar(pedido['creado_en']?.toString()) != null)
                       Text('⏱ ${_tiempoRestanteParaAceptar(pedido['creado_en']?.toString())} para responder',
                         style: const TextStyle(color: Colors.deepOrange, fontSize: 11, fontWeight: FontWeight.w700))

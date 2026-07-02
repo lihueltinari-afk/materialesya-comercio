@@ -26,45 +26,10 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
 
   Future<void> _checkSession() async {
     if (!mounted) return;
-
-    final aceptados = await terminosYaAceptados();
-    final token = await ApiService.obtenerToken();
-
-    Widget destino = const LoginScreen();
-
-    if (token != null && token.isNotEmpty) {
-      // Verificar estado real del usuario en el servidor
-      final usuario = await ApiService.usuarioActualRemoto();
-
-      if (usuario == null) {
-        // Token inválido o expirado — limpiar sesión
-        await ApiService.cerrarSesion();
-        destino = const LoginScreen();
-      } else if (usuario['email_verificado'] == false) {
-        // Usuario con email sin verificar — llevarlo a verificar
-        final email = usuario['email'] as String? ?? await ApiService.obtenerEmailUsuario() ?? '';
-        destino = VerificarEmailScreen(email: email);
-      } else {
-        // Sesión válida y email verificado — cargar comercio
-        final comercioId = await ApiService.obtenerComercioId();
-        if (!mounted) return;
-        if (comercioId != null) {
-          destino = const MainScreen();
-        } else {
-          // No hay comercio en caché, cargarlo del servidor
-          final comercio = await ApiService.miComercio();
-          if (!mounted) return;
-          destino = comercio != null ? const MainScreen() : const LoginScreen();
-        }
-      }
-    }
-
+    // MODO DEMO: login automático con cuenta demo
+    await ApiService.loginDemo('comercio@demo.com', 'demo1234');
     if (!mounted) return;
-    if (aceptados) {
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => destino));
-    } else {
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => AceptarTerminosScreen(destino: destino)));
-    }
+    Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const MainScreen()));
   }
 
   @override

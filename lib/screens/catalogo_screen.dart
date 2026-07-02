@@ -223,6 +223,13 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
               label: const Text('CSV', style: TextStyle(fontSize: 11, color: _amber, fontWeight: FontWeight.w700)),
               style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 8), tapTargetSize: MaterialTapTargetSize.shrinkWrap),
             ),
+            const SizedBox(width: 4),
+            TextButton.icon(
+              onPressed: () => _mostrarFormProductoPropio(),
+              icon: const Icon(Icons.add_circle_outline, size: 14, color: Color(0xFF2E7D32)),
+              label: const Text('Nuevo', style: TextStyle(fontSize: 11, color: Color(0xFF2E7D32), fontWeight: FontWeight.w700)),
+              style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 8), tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+            ),
           ]),
           const SizedBox(height: 10),
           // Buscador de Mi catálogo
@@ -830,6 +837,100 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
       ]),
     );
   }
+
+  void _mostrarFormProductoPropio() {
+    final nombreCtrl = TextEditingController();
+    final marcaCtrl = TextEditingController();
+    final unidadCtrl = TextEditingController(text: 'unidad');
+    final pesoCtrl = TextEditingController(text: '1');
+    final precioCtrl = TextEditingController();
+    final stockCtrl = TextEditingController(text: '10');
+    final descCtrl = TextEditingController();
+    final _formKey = GlobalKey<FormState>();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(left: 20, right: 20, top: 20, bottom: MediaQuery.of(ctx).viewInsets.bottom + 24),
+        child: SingleChildScrollView(
+          child: Form(
+            key: _formKey,
+            child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+              const Text('Agregar producto propio', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: _textDark)),
+              const SizedBox(height: 4),
+              const Text('El producto quedará pendiente de revisión antes de aparecer en el catálogo general.', style: TextStyle(fontSize: 11, color: Colors.grey)),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: nombreCtrl,
+                decoration: _inputDec('Nombre del producto *'),
+                validator: (v) => (v == null || v.trim().isEmpty) ? 'Requerido' : null,
+              ),
+              const SizedBox(height: 10),
+              Row(children: [
+                Expanded(child: TextFormField(controller: marcaCtrl, decoration: _inputDec('Marca *'), validator: (v) => (v == null || v.trim().isEmpty) ? 'Requerido' : null)),
+                const SizedBox(width: 10),
+                Expanded(child: TextFormField(controller: unidadCtrl, decoration: _inputDec('Unidad (ej: bolsa, m², litro)'))),
+              ]),
+              const SizedBox(height: 10),
+              Row(children: [
+                Expanded(child: TextFormField(controller: precioCtrl, keyboardType: TextInputType.number, decoration: _inputDec('Precio de venta (\$) *'), validator: (v) => (double.tryParse(v ?? '') == null) ? 'Precio inválido' : null)),
+                const SizedBox(width: 10),
+                Expanded(child: TextFormField(controller: stockCtrl, keyboardType: TextInputType.number, decoration: _inputDec('Stock inicial'))),
+              ]),
+              const SizedBox(height: 10),
+              TextFormField(controller: pesoCtrl, keyboardType: TextInputType.number, decoration: _inputDec('Peso por unidad (kg)')),
+              const SizedBox(height: 10),
+              TextFormField(controller: descCtrl, decoration: _inputDec('Descripción (opcional)'), maxLines: 2),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity, height: 50,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2E7D32), foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                  onPressed: () async {
+                    if (!_formKey.currentState!.validate()) return;
+                    Navigator.pop(ctx);
+                    try {
+                      await ApiService.post('/comercio/productos-propios', {
+                        'nombre': nombreCtrl.text.trim(),
+                        'marca': marcaCtrl.text.trim(),
+                        'unidad_venta': unidadCtrl.text.trim().isEmpty ? 'unidad' : unidadCtrl.text.trim(),
+                        'peso_kg': double.tryParse(pesoCtrl.text) ?? 1.0,
+                        'precio': double.parse(precioCtrl.text),
+                        'stock': int.tryParse(stockCtrl.text) ?? 0,
+                        'descripcion': descCtrl.text.trim(),
+                      });
+                      _cargarMisProductos();
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                        content: Text('Producto enviado a revisión ✓'),
+                        backgroundColor: Color(0xFF2E7D32),
+                      ));
+                    } catch (e) {
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                        content: Text('Error al guardar: $e'),
+                        backgroundColor: Colors.red,
+                      ));
+                    }
+                  },
+                  child: const Text('Enviar a revisión', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                ),
+              ),
+            ]),
+          ),
+        ),
+      ),
+    );
+  }
+
+  InputDecoration _inputDec(String label) => InputDecoration(
+    labelText: label,
+    filled: true, fillColor: Colors.grey.shade50,
+    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: Colors.grey.shade300)),
+    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+  );
 
   Widget _buildSeleccionMarca() {
     // Agrupar mis marcas por rubro

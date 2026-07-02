@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import '../core/app_colors.dart';
 import 'package:flutter/gestures.dart';
 import '../services/api_service.dart';
-import '../theme.dart';
 import '../legal_texts.dart';
 import 'verificar_email_screen.dart';
 import 'legal_screen.dart';
@@ -220,16 +220,16 @@ class _RegistroScreenState extends State<RegistroScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: kFondo,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text('Registrar comercio'),
-        backgroundColor: kNaranja,
+        backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
       ),
       body: Stepper(
         currentStep: _currentStep,
         type: StepperType.vertical,
-        connectorColor: WidgetStateProperty.all(kNaranja),
+        connectorColor: WidgetStateProperty.all(AppColors.primary),
         steps: [
           Step(
             title: const Text('Datos del negocio'),
@@ -271,7 +271,7 @@ class _RegistroScreenState extends State<RegistroScreen> {
                 ElevatedButton(
                   onPressed: _cargando ? null : details.onStepContinue,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: kNaranja,
+                    backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
                   ),
                   child: _cargando && esUltimoPaso
@@ -322,7 +322,7 @@ class _RegistroScreenState extends State<RegistroScreen> {
             return ChoiceChip(
               label: Text(_tiposLabel[tipo] ?? tipo),
               selected: seleccionado,
-              selectedColor: kNaranja,
+              selectedColor: AppColors.primary,
               labelStyle: TextStyle(
                 color: seleccionado ? Colors.white : Colors.black87,
               ),
@@ -358,11 +358,11 @@ class _RegistroScreenState extends State<RegistroScreen> {
         const SizedBox(height: 8),
         OutlinedButton.icon(
           onPressed: _confirmarUbicacion,
-          icon: Icon(_lat != null ? Icons.check_circle : Icons.map_outlined, color: _lat != null ? Colors.green : kNaranja),
+          icon: Icon(_lat != null ? Icons.check_circle : Icons.map_outlined, color: _lat != null ? Colors.green : AppColors.primary),
           label: Text(_lat != null ? 'Ubicación confirmada en el mapa ✓' : 'Confirmar ubicación en el mapa *',
-            style: TextStyle(color: _lat != null ? Colors.green : kNaranja)),
+            style: TextStyle(color: _lat != null ? Colors.green : AppColors.primary)),
           style: OutlinedButton.styleFrom(
-            side: BorderSide(color: _lat != null ? Colors.green : kNaranja),
+            side: BorderSide(color: _lat != null ? Colors.green : AppColors.primary),
             minimumSize: const Size.fromHeight(46),
           ),
         ),
@@ -382,7 +382,7 @@ class _RegistroScreenState extends State<RegistroScreen> {
             const Text('Radio de entrega:', style: TextStyle(fontWeight: FontWeight.w600)),
             Text(
               '${_radioEntrega.round()} km',
-              style: const TextStyle(fontWeight: FontWeight.bold, color: kNaranja),
+              style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary),
             ),
           ],
         ),
@@ -391,7 +391,7 @@ class _RegistroScreenState extends State<RegistroScreen> {
           min: 2,
           max: 30,
           divisions: 28,
-          activeColor: kNaranja,
+          activeColor: AppColors.primary,
           label: '${_radioEntrega.round()} km',
           onChanged: (v) => setState(() => _radioEntrega = v),
         ),
@@ -447,13 +447,13 @@ class _RegistroScreenState extends State<RegistroScreen> {
             child: GestureDetector(
               onTap: () => setState(() => _aceptaTerminos = !_aceptaTerminos),
               child: RichText(text: TextSpan(
-                style: const TextStyle(fontSize: 12, color: kAzul),
+                style: const TextStyle(fontSize: 12, color: AppColors.secondary),
                 children: [
                   const TextSpan(text: 'Acepto los '),
-                  TextSpan(text: 'Términos y condiciones', style: const TextStyle(color: kNaranja, fontWeight: FontWeight.w700),
+                  TextSpan(text: 'Términos y condiciones', style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w700),
                     recognizer: TapGestureRecognizer()..onTap = () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LegalScreen(titulo: 'Términos y condiciones', texto: terminosComercio)))),
                   const TextSpan(text: ' y la '),
-                  TextSpan(text: 'Política de privacidad', style: const TextStyle(color: kNaranja, fontWeight: FontWeight.w700),
+                  TextSpan(text: 'Política de privacidad', style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w700),
                     recognizer: TapGestureRecognizer()..onTap = () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LegalScreen(titulo: 'Política de privacidad', texto: politicaPrivacidad)))),
                 ],
               )),
@@ -464,3 +464,6 @@ class _RegistroScreenState extends State<RegistroScreen> {
     );
   }
 }
+
+
+

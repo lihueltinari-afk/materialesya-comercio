@@ -1,9 +1,9 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'package:flutter/material.dart';
+import '../core/app_colors.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:image_picker/image_picker.dart';
 import '../services/api_service.dart';
-import '../theme.dart';
 import '../soporte.dart';
 import '../legal_texts.dart';
 import 'login_screen.dart';
@@ -127,7 +127,7 @@ class _PerfilScreenState extends State<PerfilScreen> with WidgetsBindingObserver
       onTap: _subiendoImagen ? null : onTap,
       child: Container(
         width: pequeno ? 24 : 32, height: pequeno ? 24 : 32,
-        decoration: const BoxDecoration(color: kNaranja, shape: BoxShape.circle),
+        decoration: const BoxDecoration(color: AppColors.primary, shape: BoxShape.circle),
         child: _subiendoImagen
           ? const Padding(padding: EdgeInsets.all(4), child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
           : Icon(Icons.camera_alt, color: Colors.white, size: pequeno ? 13 : 16),
@@ -298,7 +298,7 @@ class _PerfilScreenState extends State<PerfilScreen> with WidgetsBindingObserver
                 );
               }
             },
-            style: ElevatedButton.styleFrom(backgroundColor: kNaranja, foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white),
             child: const Text('Guardar'),
           ),
         ],
@@ -339,15 +339,15 @@ class _PerfilScreenState extends State<PerfilScreen> with WidgetsBindingObserver
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: kFondo,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text('Mi perfil'),
-        backgroundColor: kNaranja,
+        backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         automaticallyImplyLeading: false,
       ),
       body: _cargando
-          ? const Center(child: CircularProgressIndicator(color: kNaranja))
+          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
           : ListView(
               padding: const EdgeInsets.all(16),
               children: [
@@ -360,7 +360,7 @@ class _PerfilScreenState extends State<PerfilScreen> with WidgetsBindingObserver
                       children: [
                         const Text(
                           'Datos del comercio',
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: kAzul),
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.secondary),
                         ),
                         const SizedBox(height: 12),
                         // Banner
@@ -424,11 +424,11 @@ class _PerfilScreenState extends State<PerfilScreen> with WidgetsBindingObserver
                               if ((resultado['direccion'] as String).isNotEmpty) _direccionCtrl.text = resultado['direccion'];
                             });
                           },
-                          icon: Icon(_lat != null ? Icons.check_circle : Icons.map_outlined, color: _lat != null ? Colors.green : kNaranja),
+                          icon: Icon(_lat != null ? Icons.check_circle : Icons.map_outlined, color: _lat != null ? Colors.green : AppColors.primary),
                           label: Text(_lat != null ? 'Ubicación confirmada en el mapa ✓ (tocá para ajustar)' : 'Confirmar ubicación en el mapa',
-                            style: TextStyle(color: _lat != null ? Colors.green : kNaranja)),
+                            style: TextStyle(color: _lat != null ? Colors.green : AppColors.primary)),
                           style: OutlinedButton.styleFrom(
-                            side: BorderSide(color: _lat != null ? Colors.green : kNaranja),
+                            side: BorderSide(color: _lat != null ? Colors.green : AppColors.primary),
                             minimumSize: const Size.fromHeight(44),
                           ),
                         ),
@@ -468,7 +468,7 @@ class _PerfilScreenState extends State<PerfilScreen> with WidgetsBindingObserver
                             const Text('Radio de entrega:', style: TextStyle(fontWeight: FontWeight.w600)),
                             Text(
                               '${_radioEntrega.round()} km',
-                              style: const TextStyle(fontWeight: FontWeight.bold, color: kNaranja),
+                              style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary),
                             ),
                           ],
                         ),
@@ -477,7 +477,7 @@ class _PerfilScreenState extends State<PerfilScreen> with WidgetsBindingObserver
                           min: 2,
                           max: 30,
                           divisions: 28,
-                          activeColor: kNaranja,
+                          activeColor: AppColors.primary,
                           label: '${_radioEntrega.round()} km',
                           onChanged: (v) => setState(() => _radioEntrega = v),
                         ),
@@ -491,7 +491,7 @@ class _PerfilScreenState extends State<PerfilScreen> with WidgetsBindingObserver
                                   ? '$_tiempoEntrega min'
                                   : _tiempoEntrega == 60 ? '1 hora'
                                   : '${(_tiempoEntrega / 60).toStringAsFixed(1).replaceAll('.0', '')} hs',
-                              style: const TextStyle(fontWeight: FontWeight.bold, color: kNaranja),
+                              style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary),
                             ),
                           ],
                         ),
@@ -500,7 +500,7 @@ class _PerfilScreenState extends State<PerfilScreen> with WidgetsBindingObserver
                           min: 15,
                           max: 180,
                           divisions: 11,
-                          activeColor: kNaranja,
+                          activeColor: AppColors.primary,
                           label: '$_tiempoEntrega min',
                           onChanged: (v) => setState(() => _tiempoEntrega = v.round()),
                         ),
@@ -508,7 +508,7 @@ class _PerfilScreenState extends State<PerfilScreen> with WidgetsBindingObserver
                         SwitchListTile(
                           contentPadding: EdgeInsets.zero,
                           value: _repartoPropio,
-                          activeColor: kNaranja,
+                          activeColor: AppColors.primary,
                           title: const Text('Reparto propio', style: TextStyle(fontWeight: FontWeight.w600)),
                           subtitle: const Text(
                             'Si lo activás, tus pedidos no aparecen para los repartidores de MaterialesYa: '
@@ -532,7 +532,7 @@ class _PerfilScreenState extends State<PerfilScreen> with WidgetsBindingObserver
                                     TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
                                     ElevatedButton(
                                       onPressed: () => Navigator.pop(context, true),
-                                      style: ElevatedButton.styleFrom(backgroundColor: kNaranja, foregroundColor: Colors.white),
+                                      style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white),
                                       child: const Text('Sí, acepto'),
                                     ),
                                   ],
@@ -550,7 +550,7 @@ class _PerfilScreenState extends State<PerfilScreen> with WidgetsBindingObserver
                           child: ElevatedButton(
                             onPressed: _guardando ? null : _guardar,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: kNaranja,
+                              backgroundColor: AppColors.primary,
                               foregroundColor: Colors.white,
                               minimumSize: const Size.fromHeight(48),
                             ),
@@ -578,7 +578,7 @@ class _PerfilScreenState extends State<PerfilScreen> with WidgetsBindingObserver
                       children: [
                         const Text(
                           'Mi cuenta',
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: kAzul),
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.secondary),
                         ),
                         const SizedBox(height: 12),
                         if (_comercio?['email'] != null) ...[
@@ -623,7 +623,7 @@ class _PerfilScreenState extends State<PerfilScreen> with WidgetsBindingObserver
                   child: Padding(
                     padding: const EdgeInsets.all(16),
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      const Text('Cobros con Mercado Pago', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: kAzul)),
+                      const Text('Cobros con Mercado Pago', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.secondary)),
                       const SizedBox(height: 8),
                       if (_mpConectado == true) ...[
                         const Row(children: [
@@ -654,21 +654,21 @@ class _PerfilScreenState extends State<PerfilScreen> with WidgetsBindingObserver
                 Card(
                   child: Column(children: [
                     ListTile(
-                      leading: const Icon(Icons.support_agent_outlined, color: kNaranja),
+                      leading: const Icon(Icons.support_agent_outlined, color: AppColors.primary),
                       title: const Text('Ayuda / Soporte'),
                       trailing: const Icon(Icons.chevron_right),
                       onTap: () => abrirSoporteWhatsApp(),
                     ),
                     const Divider(height: 1),
                     ListTile(
-                      leading: const Icon(Icons.description_outlined, color: kNaranja),
+                      leading: const Icon(Icons.description_outlined, color: AppColors.primary),
                       title: const Text('Términos y condiciones'),
                       trailing: const Icon(Icons.chevron_right),
                       onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LegalScreen(titulo: 'Términos y condiciones', texto: terminosComercio))),
                     ),
                     const Divider(height: 1),
                     ListTile(
-                      leading: const Icon(Icons.privacy_tip_outlined, color: kNaranja),
+                      leading: const Icon(Icons.privacy_tip_outlined, color: AppColors.primary),
                       title: const Text('Política de privacidad'),
                       trailing: const Icon(Icons.chevron_right),
                       onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LegalScreen(titulo: 'Política de privacidad', texto: politicaPrivacidad))),
@@ -693,3 +693,6 @@ class _PerfilScreenState extends State<PerfilScreen> with WidgetsBindingObserver
     );
   }
 }
+
+
+

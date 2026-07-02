@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../services/api_service.dart';
 import '../theme.dart';
+import '../core/app_colors.dart';
 import 'pedidos_screen.dart';
 import 'login_screen.dart';
 
@@ -116,211 +118,131 @@ class _HomeScreenState extends State<HomeScreen> {
     final abierto = _comercio?['abierto'] == true;
 
     return Scaffold(
-      backgroundColor: kFondo,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
+        backgroundColor: AppColors.secondary,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        automaticallyImplyLeading: false,
         title: RichText(
-          text: const TextSpan(
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Colors.white),
+          text: TextSpan(
+            style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.white),
             children: [
-              TextSpan(text: 'Materiales'),
-              TextSpan(text: 'Ya', style: TextStyle(color: Color(0xFFFFD280))),
+              const TextSpan(text: 'Materiales'),
+              TextSpan(text: 'Ya', style: TextStyle(color: AppColors.primary)),
             ],
           ),
         ),
-        backgroundColor: kNaranja,
-        foregroundColor: Colors.white,
-        automaticallyImplyLeading: false,
         actions: [
+          // Toggle abierto en el header
+          _ToggleAbierto(
+            abierto: abierto,
+            procesando: _procesandoToggle,
+            onToggle: _toggleAbierto,
+          ),
           IconButton(
-            icon: const Icon(Icons.logout),
+            icon: const Icon(Icons.logout, size: 20),
             tooltip: 'Cerrar sesión',
             onPressed: _cerrarSesion,
           ),
         ],
       ),
       body: _cargando
-          ? const Center(child: CircularProgressIndicator(color: kNaranja))
+          ? Center(child: CircularProgressIndicator(color: AppColors.primary))
           : RefreshIndicator(
-              color: kNaranja,
+              color: AppColors.primary,
               onRefresh: _cargarDatos,
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
                   // Header comercio
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 48,
-                            height: 48,
-                            decoration: BoxDecoration(
-                              color: kNaranja.withOpacity(0.15),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: const Icon(Icons.store, color: kNaranja, size: 28),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  _comercio?['nombre'] ?? 'Mi comercio',
-                                  style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: kAzul),
-                                ),
-                                Text(
-                                  _comercio?['tipo'] ?? '',
-                                  style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: const [BoxShadow(color: Color(0x14000000), offset: Offset(0, 2), blurRadius: 8)],
                     ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Toggle abierto/cerrado
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                      child: Row(
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                abierto ? 'ABIERTO' : 'CERRADO',
-                                style: TextStyle(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.bold,
-                                  color: abierto ? Colors.green : Colors.red,
-                                ),
-                              ),
-                              Text(
-                                abierto ? 'Recibiendo pedidos' : 'No recibís pedidos',
-                                style: const TextStyle(color: Colors.grey, fontSize: 12),
-                              ),
-                            ],
-                          ),
-                          const Spacer(),
-                          _procesandoToggle
-                              ? const SizedBox(
-                                  width: 32,
-                                  height: 32,
-                                  child: CircularProgressIndicator(strokeWidth: 2, color: kNaranja),
-                                )
-                              : Switch(
-                                  value: abierto,
-                                  activeColor: Colors.green,
-                                  onChanged: (_) => _toggleAbierto(),
-                                ),
-                        ],
+                    child: Row(children: [
+                      Container(
+                        width: 52, height: 52,
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryLight,
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: const Icon(Icons.store, color: AppColors.primary, size: 28),
                       ),
-                    ),
+                      const SizedBox(width: 12),
+                      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Text(_comercio?['nombre'] ?? 'Mi comercio',
+                          style: GoogleFonts.poppins(fontSize: 17, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+                        Text(_comercio?['tipo'] ?? '',
+                          style: GoogleFonts.poppins(color: AppColors.textSecondary, fontSize: 13)),
+                      ])),
+                    ]),
                   ),
                   const SizedBox(height: 16),
 
-                  // Estadísticas del día
-                  const Text(
-                    'Resumen de hoy',
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: kAzul),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
+                  // Métricas del día en grid 2x2
+                  Text('Resumen de hoy', style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+                  const SizedBox(height: 10),
+                  GridView.count(
+                    crossAxisCount: 2,
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    mainAxisSpacing: 12,
+                    crossAxisSpacing: 12,
+                    childAspectRatio: 1.5,
                     children: [
-                      _statCard('${_estadisticas?['recibidos'] ?? 0}', 'Recibidos', Icons.inbox, Colors.blue),
-                      const SizedBox(width: 8),
-                      _statCard('${_estadisticas?['en_preparacion'] ?? 0}', 'Preparando', Icons.construction, Colors.orange),
-                      const SizedBox(width: 8),
-                      _statCard('${_estadisticas?['entregados'] ?? 0}', 'Entregados', Icons.check_circle, Colors.green),
-                      const SizedBox(width: 8),
-                      _statCard(
-                        '\$${(num.tryParse('${_estadisticas?['ingresos'] ?? 0}') ?? 0).toStringAsFixed(0)}',
-                        'Ingresos',
-                        Icons.attach_money,
-                        Colors.teal,
-                      ),
+                      _MetricCard(icon: Icons.receipt_long, label: 'Pedidos hoy', value: '${_estadisticas?['recibidos'] ?? 0}', color: AppColors.primary),
+                      _MetricCard(icon: Icons.inventory_2_outlined, label: 'En preparación', value: '${_estadisticas?['en_preparacion'] ?? 0}', color: AppColors.warning),
+                      _MetricCard(icon: Icons.check_circle_outline, label: 'Entregados', value: '${_estadisticas?['entregados'] ?? 0}', color: AppColors.success),
+                      _MetricCard(icon: Icons.attach_money, label: 'Ingresos del día', value: '\$${(num.tryParse('${_estadisticas?['ingresos'] ?? 0}') ?? 0).toStringAsFixed(0)}', color: const Color(0xFF6366F1)),
                     ],
                   ),
                   const SizedBox(height: 16),
 
                   // Gráfico semanal
                   if (_datosSemanales.isNotEmpty) ...[
-                    const Text('Esta semana', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: kAzul)),
+                    Text('Esta semana', style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
                     const SizedBox(height: 8),
                     _GraficoBarras(datos: _datosSemanales),
                     const SizedBox(height: 16),
                   ],
 
                   // Pedidos pendientes
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Pedidos pendientes',
-                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: kAzul),
+                  Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                    Text('Pedidos pendientes', style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+                    if (_pedidosPendientes.isNotEmpty)
+                      TextButton(
+                        onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const PedidosScreen())),
+                        child: Text('Ver todos', style: GoogleFonts.poppins(color: AppColors.primary, fontWeight: FontWeight.w600)),
                       ),
-                      if (_pedidosPendientes.isNotEmpty)
-                        TextButton(
-                          onPressed: () => Navigator.of(context).push(
-                            MaterialPageRoute(builder: (_) => const PedidosScreen()),
-                          ),
-                          child: const Text('Ver todos', style: TextStyle(color: kNaranja)),
-                        ),
-                    ],
-                  ),
+                  ]),
                   const SizedBox(height: 4),
                   if (_pedidosPendientes.isEmpty)
-                    const Card(
-                      child: Padding(
-                        padding: EdgeInsets.all(20),
-                        child: Center(
-                          child: Text('No hay pedidos pendientes', style: TextStyle(color: Colors.grey)),
-                        ),
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: const [BoxShadow(color: Color(0x14000000), offset: Offset(0, 2), blurRadius: 8)],
                       ),
+                      child: Center(child: Text('No hay pedidos pendientes', style: GoogleFonts.poppins(color: AppColors.textSecondary))),
                     )
                   else
                     ..._pedidosPendientes.map((p) => _pedidoItem(p as Map<String, dynamic>)),
 
                   const SizedBox(height: 16),
                   ElevatedButton.icon(
-                    onPressed: () => Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const PedidosScreen()),
-                    ),
+                    onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const PedidosScreen())),
                     icon: const Icon(Icons.receipt_long),
-                    label: const Text('Ver todos los pedidos'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: kAzul,
-                      foregroundColor: Colors.white,
-                      minimumSize: const Size.fromHeight(48),
-                    ),
+                    label: Text('Ver todos los pedidos', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
                   ),
                   const SizedBox(height: 24),
                 ],
               ),
             ),
-    );
-  }
-
-  Widget _statCard(String valor, String label, IconData icono, Color color) {
-    return Expanded(
-      child: Card(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
-          child: Column(
-            children: [
-              Icon(icono, color: color, size: 20),
-              const SizedBox(height: 4),
-              Text(valor, style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: color)),
-              Text(label, style: const TextStyle(fontSize: 9, color: Colors.grey), textAlign: TextAlign.center),
-            ],
-          ),
-        ),
-      ),
     );
   }
 
@@ -330,23 +252,87 @@ class _HomeScreenState extends State<HomeScreen> {
     final total = double.tryParse(pedido['total']?.toString() ?? '0') ?? 0;
     final tiempo = _tiempoDesde(pedido['created_at']);
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: const [BoxShadow(color: Color(0x14000000), offset: Offset(0, 2), blurRadius: 8)],
+      ),
       child: ListTile(
-        leading: const CircleAvatar(
-          backgroundColor: Color(0xFFFFF3E0),
-          child: Icon(Icons.receipt, color: Colors.orange),
+        leading: Container(
+          width: 40, height: 40,
+          decoration: const BoxDecoration(color: AppColors.primaryLight, shape: BoxShape.circle),
+          child: const Icon(Icons.receipt, color: AppColors.primary, size: 20),
         ),
-        title: Text('Pedido #$numero', style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Text(clienteNombre),
-        trailing: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Text('\$${total.toStringAsFixed(0)}', style: const TextStyle(fontWeight: FontWeight.bold)),
-            if (tiempo.isNotEmpty)
-              Text(tiempo, style: const TextStyle(fontSize: 11, color: Colors.grey)),
-          ],
+        title: Text('Pedido #$numero', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 13, color: AppColors.textPrimary)),
+        subtitle: Text(clienteNombre, style: GoogleFonts.poppins(fontSize: 12, color: AppColors.textSecondary)),
+        trailing: Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.end, children: [
+          Text('\$${total.toStringAsFixed(0)}', style: GoogleFonts.poppins(fontWeight: FontWeight.w700, color: AppColors.primary)),
+          if (tiempo.isNotEmpty)
+            Text(tiempo, style: GoogleFonts.poppins(fontSize: 10, color: AppColors.textLight)),
+        ]),
+      ),
+    );
+  }
+}
+
+// ─── METRIC CARD ──────────────────────────────────────────────────────────────
+class _MetricCard extends StatelessWidget {
+  final IconData icon;
+  final String label, value;
+  final Color color;
+  const _MetricCard({required this.icon, required this.label, required this.value, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: const [BoxShadow(color: Color(0x14000000), offset: Offset(0, 2), blurRadius: 8)],
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Container(
+          padding: const EdgeInsets.all(7),
+          decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)),
+          child: Icon(icon, color: color, size: 18),
+        ),
+        const Spacer(),
+        Text(value, style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+        Text(label, style: GoogleFonts.poppins(fontSize: 10, color: AppColors.textSecondary)),
+      ]),
+    );
+  }
+}
+
+// ─── TOGGLE ABIERTO ───────────────────────────────────────────────────────────
+class _ToggleAbierto extends StatelessWidget {
+  final bool abierto, procesando;
+  final VoidCallback onToggle;
+  const _ToggleAbierto({required this.abierto, required this.procesando, required this.onToggle});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 4),
+      child: GestureDetector(
+        onTap: procesando ? null : onToggle,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: abierto ? const Color(0xFF0D5C37) : const Color(0xFF374151),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: procesando
+            ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+            : Row(mainAxisSize: MainAxisSize.min, children: [
+                Container(width: 6, height: 6, decoration: BoxDecoration(shape: BoxShape.circle, color: abierto ? AppColors.success : AppColors.textLight)),
+                const SizedBox(width: 6),
+                Text(abierto ? 'ABIERTO' : 'CERRADO',
+                  style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white)),
+              ]),
         ),
       ),
     );
@@ -422,14 +408,14 @@ class _GraficoBarrasState extends State<_GraficoBarras> {
                       height: ratio * 90,
                       margin: const EdgeInsets.symmetric(horizontal: 3),
                       decoration: BoxDecoration(
-                        color: _esHoy(fecha) ? kNaranja : kNaranja.withOpacity(0.35),
+                        color: _esHoy(fecha) ? AppColors.primary : AppColors.primary.withValues(alpha: 0.35),
                         borderRadius: const BorderRadius.vertical(top: Radius.circular(5)),
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(diasem, style: TextStyle(fontSize: 10,
                       fontWeight: _esHoy(fecha) ? FontWeight.bold : FontWeight.normal,
-                      color: _esHoy(fecha) ? kNaranja : Colors.grey)),
+                      color: _esHoy(fecha) ? AppColors.primary : AppColors.textSecondary)),
                   ],
                 ));
               }),
@@ -445,7 +431,7 @@ class _GraficoBarrasState extends State<_GraficoBarras> {
     child: Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: _metrica == idx ? kNaranja : Colors.grey.shade100,
+        color: _metrica == idx ? AppColors.primary : AppColors.background,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(label, style: TextStyle(

@@ -1,7 +1,7 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:flutter/material.dart';
+import '../core/app_colors.dart';
 import '../services/api_service.dart';
-import '../theme.dart';
 import 'detalle_pedido_screen.dart';
 
 class PedidosScreen extends StatefulWidget {
@@ -147,10 +147,10 @@ class _PedidosScreenState extends State<PedidosScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: kFondo,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text('Pedidos'),
-        backgroundColor: kNaranja,
+        backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
       ),
       body: Column(
@@ -177,7 +177,7 @@ class _PedidosScreenState extends State<PedidosScreen> {
                       margin: const EdgeInsets.only(right: 8),
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
                       decoration: BoxDecoration(
-                        color: sel ? kNaranja : Colors.grey.shade100,
+                        color: sel ? AppColors.primary : Colors.grey.shade100,
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
@@ -218,7 +218,7 @@ class _PedidosScreenState extends State<PedidosScreen> {
                         ),
                       )
                     : RefreshIndicator(
-                        color: kNaranja,
+                        color: AppColors.primary,
                         onRefresh: _cargarPedidos,
                         child: ListView.builder(
                           padding: const EdgeInsets.all(12),
@@ -261,7 +261,7 @@ class _PedidosScreenState extends State<PedidosScreen> {
           child: Row(
             children: [
               CircleAvatar(
-                backgroundColor: color.withOpacity(0.12),
+                backgroundColor: color.withValues(alpha: 0.12),
                 child: Icon(Icons.receipt, color: color),
               ),
               const SizedBox(width: 12),
@@ -291,7 +291,7 @@ class _PedidosScreenState extends State<PedidosScreen> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
-                      color: color.withOpacity(0.12),
+                      color: color.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
@@ -342,7 +342,7 @@ class _PedidoSkeletonState extends State<_PedidoSkeleton> with SingleTickerProvi
           margin: const EdgeInsets.only(bottom: 10),
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14),
-            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 6)]),
+            boxShadow: [BoxShadow(color: const Color(0x0A000000), blurRadius: 6)]),
           child: Row(children: [
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Container(height: 13, width: 140, decoration: BoxDecoration(color: c2, borderRadius: BorderRadius.circular(6))),
@@ -360,3 +360,6 @@ class _PedidoSkeletonState extends State<_PedidoSkeleton> with SingleTickerProvi
     );
   }
 }
+
+
+

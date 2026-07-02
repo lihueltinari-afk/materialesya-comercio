@@ -1,5 +1,7 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import '../core/app_colors.dart';
 import '../services/api_service.dart';
 import '../theme.dart';
 
@@ -284,14 +286,14 @@ class _DetallePedidoScreenState extends State<DetallePedidoScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: kFondo,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         title: Text(_pedido != null ? 'Pedido #${_pedido!['numero'] ?? _pedido!['id']}' : 'Detalle del pedido'),
-        backgroundColor: kNaranja,
+        backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
       ),
       body: _cargando
-          ? const Center(child: CircularProgressIndicator(color: kNaranja))
+          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
           : _pedido == null
               ? const Center(child: Text('No se pudo cargar el pedido'))
               : _buildContenido(),
@@ -308,7 +310,7 @@ class _DetallePedidoScreenState extends State<DetallePedidoScreen> {
     final calificacion = pedido['calificacion'];
 
     return RefreshIndicator(
-      color: kNaranja,
+      color: AppColors.primary,
       onRefresh: _cargarPedido,
       child: ListView(
         padding: const EdgeInsets.all(16),
@@ -327,7 +329,7 @@ class _DetallePedidoScreenState extends State<DetallePedidoScreen> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                         decoration: BoxDecoration(
-                          color: color.withOpacity(0.12),
+                          color: color.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
@@ -360,7 +362,7 @@ class _DetallePedidoScreenState extends State<DetallePedidoScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Cliente', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: kAzul)),
+                  const Text('Cliente', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.secondary)),
                   const Divider(),
                   _infoRow(Icons.person, cliente['nombre'] ?? 'Sin nombre'),
                   if ((cliente['telefono'] ?? '').toString().isNotEmpty)
@@ -381,7 +383,7 @@ class _DetallePedidoScreenState extends State<DetallePedidoScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Repartidor', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: kAzul)),
+                    const Text('Repartidor', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.secondary)),
                     const Divider(),
                     _infoRow(Icons.delivery_dining, pedido['repartidor_nombre'].toString()),
                     if ((pedido['repartidor_telefono'] ?? '').toString().isNotEmpty)
@@ -401,7 +403,7 @@ class _DetallePedidoScreenState extends State<DetallePedidoScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Productos', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: kAzul)),
+                  const Text('Productos', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.secondary)),
                   const Divider(),
                   if (items.isEmpty)
                     const Text('Sin productos', style: TextStyle(color: Colors.grey))
@@ -414,7 +416,7 @@ class _DetallePedidoScreenState extends State<DetallePedidoScreen> {
                       const Text('TOTAL', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                       Text(
                         '\$${total.toStringAsFixed(0)}',
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: kNaranja),
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppColors.primary),
                       ),
                     ],
                   ),
@@ -432,7 +434,7 @@ class _DetallePedidoScreenState extends State<DetallePedidoScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Calificación recibida', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: kAzul)),
+                    const Text('Calificación recibida', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.secondary)),
                     const Divider(),
                     Row(
                       children: List.generate(5, (i) {
@@ -460,7 +462,7 @@ class _DetallePedidoScreenState extends State<DetallePedidoScreen> {
                   Row(children: [
                     const Icon(Icons.report_problem_outlined, color: Colors.red, size: 18),
                     const SizedBox(width: 8),
-                    const Text('Reclamo del cliente', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: kAzul)),
+                    const Text('Reclamo del cliente', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.secondary)),
                     const Spacer(),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -509,7 +511,7 @@ class _DetallePedidoScreenState extends State<DetallePedidoScreen> {
 
           // Acciones según estado
           if (_procesando)
-            const Center(child: CircularProgressIndicator(color: kNaranja))
+            const Center(child: CircularProgressIndicator(color: AppColors.primary))
           else if (estado == 'pendiente') ...[
             Row(
               children: [
@@ -671,7 +673,7 @@ class _DialogTiempoEstimadoState extends State<_DialogTiempoEstimado> {
             value: min,
             groupValue: _seleccionado,
             title: Text('$min minutos'),
-            activeColor: kNaranja,
+            activeColor: AppColors.primary,
             onChanged: (v) => setState(() => _seleccionado = v!),
           );
         }).toList(),
@@ -690,3 +692,5 @@ class _DialogTiempoEstimadoState extends State<_DialogTiempoEstimado> {
     );
   }
 }
+
+

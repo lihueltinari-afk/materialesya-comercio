@@ -1,12 +1,13 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:flutter/material.dart';
+import '../core/app_colors.dart';
 import '../services/api_service.dart';
-import '../theme.dart';
 import 'home_screen.dart';
 import 'pedidos_screen.dart';
 import 'catalogo_screen.dart';
 import 'perfil_screen.dart';
 import '../widgets/reporte_error_button.dart';
+import '../widgets/offline_banner.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -55,17 +56,19 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: IndexedStack(
-        index: _tabActual,
-        children: _pantallas,
+    return OfflineBanner(
+      child: Scaffold(
+        body: IndexedStack(
+          index: _tabActual,
+          children: _pantallas,
+        ),
+        bottomNavigationBar: _buildNavBar(),
+        floatingActionButton: ReporteErrorButton(
+          pantalla: _pantallaNames[_tabActual],
+          appNombre: 'Comercio',
+        ),
+        floatingActionButtonLocation: FloatingActionButtonLocation.endContained,
       ),
-      bottomNavigationBar: _buildNavBar(),
-      floatingActionButton: ReporteErrorButton(
-        pantalla: _pantallaNames[_tabActual],
-        appNombre: 'Comercio',
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endContained,
     );
   }
 
@@ -74,7 +77,7 @@ class _MainScreenState extends State<MainScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 8, offset: const Offset(0, -2)),
+          BoxShadow(color: const Color(0x14000000), blurRadius: 8, offset: const Offset(0, -2)),
         ],
       ),
       child: SafeArea(
@@ -104,7 +107,7 @@ class _MainScreenState extends State<MainScreen> {
           children: [
             Icon(
               activo ? iconoActivo : iconoInactivo,
-              color: activo ? kNaranja : Colors.grey,
+              color: activo ? AppColors.primary : Colors.grey,
               size: 26,
             ),
             const SizedBox(height: 2),
@@ -112,7 +115,7 @@ class _MainScreenState extends State<MainScreen> {
               label,
               style: TextStyle(
                 fontSize: 10,
-                color: activo ? kNaranja : Colors.grey,
+                color: activo ? AppColors.primary : Colors.grey,
                 fontWeight: activo ? FontWeight.bold : FontWeight.normal,
               ),
             ),
@@ -135,7 +138,7 @@ class _MainScreenState extends State<MainScreen> {
               children: [
                 Icon(
                   activo ? iconoActivo : iconoInactivo,
-                  color: activo ? kNaranja : Colors.grey,
+                  color: activo ? AppColors.primary : Colors.grey,
                   size: 26,
                 ),
                 if (badge > 0)
@@ -163,7 +166,7 @@ class _MainScreenState extends State<MainScreen> {
               label,
               style: TextStyle(
                 fontSize: 10,
-                color: activo ? kNaranja : Colors.grey,
+                color: activo ? AppColors.primary : Colors.grey,
                 fontWeight: activo ? FontWeight.bold : FontWeight.normal,
               ),
             ),
@@ -173,3 +176,5 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 }
+
+

@@ -1,4 +1,6 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import '../core/app_colors.dart';
 import '../services/api_service.dart';
 import '../services/google_auth_service.dart';
 import '../theme.dart';
@@ -110,7 +112,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: kFondo,
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(28),
@@ -118,11 +120,11 @@ class _LoginScreenState extends State<LoginScreen> {
             const SizedBox(height: 48),
             Container(
               width: 80, height: 80,
-              decoration: BoxDecoration(color: kNaranja, borderRadius: BorderRadius.circular(20)),
+              decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(20)),
               child: const Icon(Icons.store, size: 44, color: Colors.white),
             ),
             const SizedBox(height: 20),
-            const Text('MaterialesYa', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: kAzul)),
+            const Text('MaterialesYa', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: AppColors.secondary)),
             const Text('Panel del Comercio', style: TextStyle(fontSize: 14, color: Colors.grey)),
             const SizedBox(height: 40),
             TextField(
@@ -149,7 +151,7 @@ class _LoginScreenState extends State<LoginScreen> {
               alignment: Alignment.centerRight,
               child: TextButton(
                 onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const _RecuperarPasswordScreen())),
-                child: const Text('¿Olvidaste tu contraseña?', style: TextStyle(color: kAzul, fontSize: 13)),
+                child: const Text('¿Olvidaste tu contraseña?', style: TextStyle(color: AppColors.secondary, fontSize: 13)),
               ),
             ),
             const SizedBox(height: 16),
@@ -187,7 +189,7 @@ class _LoginScreenState extends State<LoginScreen> {
             const SizedBox(height: 20),
             TextButton(
               onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RegistroScreen())),
-              child: const Text('¿No tenés cuenta? Registrá tu comercio', style: TextStyle(color: kAzul)),
+              child: const Text('¿No tenés cuenta? Registrá tu comercio', style: TextStyle(color: AppColors.secondary)),
             ),
           ]),
         ),
@@ -265,10 +267,10 @@ class _RecuperarPasswordScreenState extends State<_RecuperarPasswordScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: kFondo,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text('Recuperar contraseña'),
-        backgroundColor: kNaranja,
+        backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         leading: IconButton(icon: const Icon(Icons.arrow_back), onPressed: () => Navigator.pop(context)),
       ),
@@ -283,9 +285,9 @@ class _RecuperarPasswordScreenState extends State<_RecuperarPasswordScreen> {
   Widget _buildPaso1() {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       const SizedBox(height: 16),
-      const Icon(Icons.lock_reset, size: 48, color: kNaranja),
+      const Icon(Icons.lock_reset, size: 48, color: AppColors.primary),
       const SizedBox(height: 16),
-      const Text('Recuperar contraseña', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: kAzul)),
+      const Text('Recuperar contraseña', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: AppColors.secondary)),
       const SizedBox(height: 8),
       const Text('Ingresá el email de tu comercio y te enviamos un código para restablecer la contraseña.',
         style: TextStyle(fontSize: 14, color: Colors.grey, height: 1.5)),
@@ -305,7 +307,7 @@ class _RecuperarPasswordScreenState extends State<_RecuperarPasswordScreen> {
         width: double.infinity, height: 50,
         child: ElevatedButton(
           onPressed: _cargando ? null : _enviarCodigo,
-          style: ElevatedButton.styleFrom(backgroundColor: kNaranja, foregroundColor: Colors.white),
+          style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white),
           child: _cargando
             ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
             : const Text('Enviar código', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
@@ -317,9 +319,9 @@ class _RecuperarPasswordScreenState extends State<_RecuperarPasswordScreen> {
   Widget _buildPaso2() {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       const SizedBox(height: 16),
-      const Icon(Icons.mark_email_read_outlined, size: 48, color: kNaranja),
+      const Icon(Icons.mark_email_read_outlined, size: 48, color: AppColors.primary),
       const SizedBox(height: 16),
-      const Text('Revisá tu email', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: kAzul)),
+      const Text('Revisá tu email', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: AppColors.secondary)),
       const SizedBox(height: 8),
       Text('Enviamos un código de 6 dígitos a ${_emailCtrl.text.trim()}. Ingresalo abajo junto con tu nueva contraseña.',
         style: const TextStyle(fontSize: 14, color: Colors.grey, height: 1.5)),
@@ -364,7 +366,7 @@ class _RecuperarPasswordScreenState extends State<_RecuperarPasswordScreen> {
         width: double.infinity, height: 50,
         child: ElevatedButton(
           onPressed: _cargando ? null : _cambiarPassword,
-          style: ElevatedButton.styleFrom(backgroundColor: kNaranja, foregroundColor: Colors.white),
+          style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white),
           child: _cargando
             ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
             : const Text('Cambiar contraseña', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
@@ -374,7 +376,7 @@ class _RecuperarPasswordScreenState extends State<_RecuperarPasswordScreen> {
       Center(
         child: TextButton(
           onPressed: _cargando ? null : _enviarCodigo,
-          child: const Text('Reenviar código', style: TextStyle(color: kAzul)),
+          child: const Text('Reenviar código', style: TextStyle(color: AppColors.secondary)),
         ),
       ),
     ]);
@@ -403,7 +405,7 @@ class _PantallaExito extends StatelessWidget {
           width: double.infinity, height: 50,
           child: ElevatedButton(
             onPressed: onVolver,
-            style: ElevatedButton.styleFrom(backgroundColor: kNaranja, foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white),
             child: const Text('Ir al inicio de sesión', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
           ),
         ),
@@ -411,3 +413,5 @@ class _PantallaExito extends StatelessWidget {
     );
   }
 }
+
+

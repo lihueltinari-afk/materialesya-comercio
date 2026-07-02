@@ -6,6 +6,7 @@ import 'services/api_service.dart';
 import 'services/notificacion_service.dart';
 import 'services/remote_config_service.dart';
 import 'theme.dart';
+import 'core/app_theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -41,7 +42,9 @@ class _MaterialesYaComercioAppState extends State<MaterialesYaComercioApp> {
       navigatorKey: _navKey,
       title: 'MaterialesYa Comercio',
       debugShowCheckedModeBanner: false,
-      theme: appTheme,
+      theme: AppTheme.light,
+      darkTheme: AppTheme.dark,
+      themeMode: ThemeMode.light,
       home: const SplashScreen(),
     );
   }

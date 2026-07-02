@@ -11,6 +11,7 @@ class ApiService {
     return kReleaseMode ? _prod : 'http://localhost:3000/api';
   }
 
+  static String get baseUrlPublico => _base;
   static VoidCallback? onSesionExpirada;
   static bool _sesionExpirandose = false;
 

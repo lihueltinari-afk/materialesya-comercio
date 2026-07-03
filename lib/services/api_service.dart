@@ -14,6 +14,8 @@ class ApiService {
   }
 
   static String get baseUrlPublico => _base;
+  static String get baseUrl => _base;
+  static Future<String?> getToken() => obtenerToken();
   static VoidCallback? onSesionExpirada;
   static bool _sesionExpirandose = false;
 

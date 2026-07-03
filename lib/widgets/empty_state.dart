@@ -58,7 +58,7 @@ class EmptyState extends StatelessWidget {
             if (botonTexto != null && onBoton != null) ...[
               const SizedBox(height: 24),
               MyButton(
-                texto: botonTexto!,
+                label: botonTexto!,
                 onPressed: onBoton!,
                 width: 200,
               ),

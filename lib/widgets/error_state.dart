@@ -51,10 +51,10 @@ class ErrorState extends StatelessWidget {
             if (onReintentar != null) ...[
               const SizedBox(height: 24),
               MyButton(
-                texto: 'Reintentar',
+                label: 'Reintentar',
                 onPressed: onReintentar!,
                 width: 160,
-                icono: Icons.refresh_rounded,
+                icon: Icons.refresh_rounded,
               ),
             ],
           ],

@@ -39,3 +39,62 @@ const String politicaPrivacidad = '''
 
 9. Cambios en esta política: cualquier modificación será notificada a través de la app.
 ''';
+
+// ---------------------------------------------------------------------------
+// Versiones vigentes de los documentos que requieren aceptación explícita.
+// Subir el número cuando se actualice el texto correspondiente (se guarda en la
+// base al registrarse, junto con la fecha y la IP).
+const String kTcVersion = '1.0';
+const String kPrivacidadVersion = '1.0';
+const String kComisionesVersion = '1.0';
+
+// ---------------------------------------------------------------------------
+// DOCUMENTOS ADICIONALES — TEXTO PLACEHOLDER (BORRADOR)
+// TODO(legal): reemplazar por los textos definitivos provistos por el dueño.
+const String politicaCookies = '''
+[BORRADOR — reemplazar por el texto definitivo]
+
+1. Qué son las cookies: pequeños archivos que se almacenan en tu dispositivo para recordar preferencias y mejorar tu experiencia.
+
+2. Cookies que usamos: técnicas (necesarias para el funcionamiento), de sesión (para mantenerte identificado) y analíticas (para entender el uso de la app).
+
+3. Gestión: podés administrar o eliminar las cookies desde la configuración de tu dispositivo o navegador. Deshabilitarlas puede afectar algunas funciones.
+
+4. Cambios: cualquier modificación a esta política será notificada a través de la app.
+''';
+
+const String politicaCancelaciones = '''
+[BORRADOR — reemplazar por el texto definitivo]
+
+1. Cancelación del pedido: el comercio puede rechazar o cancelar un pedido por falta de stock u otros motivos, informándolo a través de la app.
+
+2. Cancelación por el cliente: el cliente puede cancelar sin costo antes de que el comercio acepte el pedido o mientras esté en preparación.
+
+3. Reembolsos: los reembolsos se procesan a través del medio de pago original según los tiempos de Mercado Pago.
+
+4. Cambios: cualquier modificación a esta política será notificada a través de la app.
+''';
+
+const String codigoConducta = '''
+[BORRADOR — reemplazar por el texto definitivo]
+
+1. Respeto: comercios, clientes y repartidores deben tratarse con respeto, sin discriminación ni agresiones.
+
+2. Honestidad: no se permite el uso fraudulento de la plataforma ni la publicación de información falsa sobre productos, precios o stock.
+
+3. Cumplimiento: el comercio debe cumplir la normativa fiscal y comercial aplicable a su actividad.
+
+4. Incumplimientos: MaterialesYa podrá suspender o dar de baja cuentas que incumplan este código.
+''';
+
+const String politicaComisiones = '''
+[BORRADOR — reemplazar por el texto definitivo]
+
+1. Comisión de la plataforma: MaterialesYa cobra una comisión sobre cada pedido gestionado a través de la app. El porcentaje vigente se informa en este documento y en el panel del comercio.
+
+2. Liquidación: las comisiones se descuentan automáticamente de las liquidaciones al comercio según los tiempos de Mercado Pago.
+
+3. Actualizaciones: MaterialesYa podrá actualizar la comisión vigente notificando a los comercios a través de la app con antelación razonable.
+
+4. Aceptación: al registrarse y operar en la plataforma, el comercio acepta la política de comisiones vigente.
+''';

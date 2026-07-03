@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'api_service.dart';
+import '../legal_texts.dart';
 
 class GoogleAuthService {
   static Future<Map<String, dynamic>?> signIn({String rol = 'comercio'}) async {
@@ -11,7 +12,12 @@ class GoogleAuthService {
       final idToken = await result.user?.getIdToken();
       if (idToken == null) return null;
 
-      final res = await ApiService.post('/auth/google-login', {'idToken': idToken, 'rol': rol});
+      final res = await ApiService.post('/auth/google-login', {
+        'idToken': idToken,
+        'rol': rol,
+        'tc_version': kTcVersion,
+        'privacidad_version': kPrivacidadVersion,
+      });
       if (res['status'] == 200) return res['data'];
       return null;
     } catch (e) {

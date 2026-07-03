@@ -40,6 +40,8 @@ class _RegistroScreenState extends State<RegistroScreen> {
   final _passCtrl = TextEditingController();
   bool _verPassword = false;
   bool _aceptaTerminos = false;
+  bool _aceptaIndependiente = false;
+  bool _aceptaComisiones = false;
 
   final List<String> _tipos = [
     'corralon',
@@ -121,6 +123,14 @@ class _RegistroScreenState extends State<RegistroScreen> {
           _mostrarError('Tenés que aceptar los Términos y la Política de Privacidad');
           return false;
         }
+        if (!_aceptaIndependiente) {
+          _mostrarError('Tenés que aceptar que sos un contratante independiente');
+          return false;
+        }
+        if (!_aceptaComisiones) {
+          _mostrarError('Tenés que aceptar la política de comisiones vigente');
+          return false;
+        }
         return true;
       default:
         return true;
@@ -160,6 +170,12 @@ class _RegistroScreenState extends State<RegistroScreen> {
         'email': _emailCtrl.text.trim(),
         'password': _passCtrl.text,
         'rol': 'comercio',
+        'tc_version': kTcVersion,
+        'privacidad_version': kPrivacidadVersion,
+        'declaraciones': {
+          'contratante_independiente': _aceptaIndependiente,
+          'comisiones_version': kComisionesVersion,
+        },
       });
 
       if (!mounted) return;
@@ -506,6 +522,29 @@ class _RegistroScreenState extends State<RegistroScreen> {
                 ],
               )),
             ),
+          )),
+        ]),
+        Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Checkbox(value: _aceptaIndependiente, onChanged: (v) => setState(() => _aceptaIndependiente = v ?? false)),
+          const Expanded(child: Padding(
+            padding: EdgeInsets.only(top: 12),
+            child: Text('Entiendo que soy un contratante independiente y no empleado de MaterialesYa.',
+              style: TextStyle(fontSize: 12, color: AppColors.secondary)),
+          )),
+        ]),
+        Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Checkbox(value: _aceptaComisiones, onChanged: (v) => setState(() => _aceptaComisiones = v ?? false)),
+          Expanded(child: Padding(
+            padding: const EdgeInsets.only(top: 12),
+            child: RichText(text: TextSpan(
+              style: const TextStyle(fontSize: 12, color: AppColors.secondary),
+              children: [
+                const TextSpan(text: 'Acepto la '),
+                TextSpan(text: 'política de comisiones vigente', style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w700),
+                  recognizer: TapGestureRecognizer()..onTap = () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LegalScreen(titulo: 'Política de comisiones', texto: politicaComisiones)))),
+                const TextSpan(text: '.'),
+              ],
+            )),
           )),
         ]),
       ],

@@ -37,7 +37,7 @@ class _MainScreenState extends State<MainScreen> {
   Future<void> _verificarRubros() async {
     final res = await ApiService.get('/rubros/comercio');
     if (!mounted) return;
-    if (res['status'] == 200 && (res['data'] as List).isEmpty) {
+    if (res['status'] == 200 && res['data'] is List && (res['data'] as List).isEmpty) {
       // No tiene rubros → mostrar pantalla de selección
       await Navigator.push(
         context,

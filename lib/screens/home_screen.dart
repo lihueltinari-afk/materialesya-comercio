@@ -6,6 +6,7 @@ import '../theme.dart';
 import '../core/app_colors.dart';
 import 'pedidos_screen.dart';
 import 'login_screen.dart';
+import 'validar_retiro_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -199,6 +200,20 @@ class _HomeScreenState extends State<HomeScreen> {
                       _MetricCard(icon: Icons.check_circle_outline, label: 'Entregados', value: '${_estadisticas?['entregados'] ?? 0}', color: AppColors.success),
                       _MetricCard(icon: Icons.attach_money, label: 'Ingresos del día', value: '\$${(num.tryParse('${_estadisticas?['ingresos'] ?? 0}') ?? 0).toStringAsFixed(0)}', color: const Color(0xFF6366F1)),
                     ],
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Botón validar retiro
+                  OutlinedButton.icon(
+                    onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ValidarRetiroScreen())),
+                    icon: const Icon(Icons.qr_code_scanner_rounded, color: AppColors.primary),
+                    label: Text('Validar retiro de cliente', style: GoogleFonts.poppins(color: AppColors.primary, fontWeight: FontWeight.w600)),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: AppColors.primary),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      minimumSize: const Size(double.infinity, 0),
+                    ),
                   ),
                   const SizedBox(height: 16),
 

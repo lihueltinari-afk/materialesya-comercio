@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import '../core/app_colors.dart';
 import '../services/api_service.dart';
 
 const _navy  = Color(0xFF1E3A5F);
-const _amber = Color(0xFFE07B00);
 const _bg    = Color(0xFFF5F5F5);
 const _textDark = Color(0xFF1A1A1A);
 const _textGrey = Color(0xFF888888);
@@ -281,7 +281,7 @@ class _MarcasScreenState extends State<MarcasScreen> {
           child: ElevatedButton(
             onPressed: _guardando || _seleccionadas.isEmpty ? null : _guardar,
             style: ElevatedButton.styleFrom(
-              backgroundColor: _amber,
+              backgroundColor: AppColors.primary,
               disabledBackgroundColor: Colors.grey.shade300,
               minimumSize: const Size(double.infinity, 48),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),

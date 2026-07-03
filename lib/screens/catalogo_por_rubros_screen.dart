@@ -1,9 +1,8 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../services/api_service.dart';
 import '../core/app_colors.dart';
 
-const _amber = Color(0xFFE07B00);
 const _textDark = Color(0xFF1A1A1A);
 const _textGrey = Color(0xFF888888);
 const _bgPage = Color(0xFFF7F7F8);
@@ -104,7 +103,7 @@ class _CatalogoPorRubrosScreenState extends State<CatalogoPorRubrosScreen> {
           SizedBox(
             width: double.infinity, height: 50,
             child: ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: _amber, foregroundColor: Colors.white,
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
               onPressed: () async {
                 final precio = double.tryParse(precioCtrl.text);
@@ -138,7 +137,7 @@ class _CatalogoPorRubrosScreenState extends State<CatalogoPorRubrosScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_cargando) return const Center(child: CircularProgressIndicator(color: _amber));
+    if (_cargando) return const Center(child: CircularProgressIndicator(color: AppColors.primary));
 
     if (_rubros.isEmpty) {
       return Center(
@@ -175,7 +174,7 @@ class _CatalogoPorRubrosScreenState extends State<CatalogoPorRubrosScreen> {
 
     return RefreshIndicator(
       onRefresh: () async { _productos.clear(); await _cargar(); },
-      color: _amber,
+      color: AppColors.primary,
       child: ListView(
         padding: const EdgeInsets.only(bottom: 24),
         children: [
@@ -186,7 +185,7 @@ class _CatalogoPorRubrosScreenState extends State<CatalogoPorRubrosScreen> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: _amber.withValues(alpha: 0.3)),
+              border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
             ),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Row(children: [
@@ -298,7 +297,7 @@ class _CatalogoPorRubrosScreenState extends State<CatalogoPorRubrosScreen> {
           if (cargandoProd)
             const Padding(
               padding: EdgeInsets.all(20),
-              child: Center(child: CircularProgressIndicator(color: _amber, strokeWidth: 2)),
+              child: Center(child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2)),
             )
           else if (productos.isEmpty)
             Padding(
@@ -333,8 +332,8 @@ class _CatalogoPorRubrosScreenState extends State<CatalogoPorRubrosScreen> {
           clipBehavior: Clip.antiAlias,
           child: imgUrl != null
             ? Image.network(imgUrl, fit: BoxFit.contain,
-                errorBuilder: (_, __, ___) => const Icon(Icons.construction, color: _amber, size: 20))
-            : const Icon(Icons.construction, color: _amber, size: 20),
+                errorBuilder: (_, __, ___) => const Icon(Icons.construction, color: AppColors.primary, size: 20))
+            : const Icon(Icons.construction, color: AppColors.primary, size: 20),
         ),
         const SizedBox(width: 10),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

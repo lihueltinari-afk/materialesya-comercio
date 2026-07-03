@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import '../core/app_colors.dart';
 import '../services/api_service.dart';
 import 'marcas_screen.dart';
 
 const _navy  = Color(0xFF1E3A5F);
-const _amber = Color(0xFFE07B00);
 const _bg    = Color(0xFFF5F5F5);
 const _dark  = Color(0xFF1A1A1A);
 const _grey  = Color(0xFF888888);
@@ -393,12 +393,12 @@ class _MarcasGrupoLoaderState extends State<_MarcasGrupoLoader> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
-                color: _amber.withValues(alpha: 0.1),
+                color: AppColors.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: _amber.withValues(alpha: 0.5)),
+                border: Border.all(color: AppColors.primary.withValues(alpha: 0.5)),
               ),
               child: const Text('+ Agregar', textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: _amber)),
+                style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: AppColors.primary)),
             )
           else
             const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: _grey),
@@ -496,7 +496,7 @@ class _PantallaProductosGrupoMarcaState extends State<_PantallaProductosGrupoMar
             width: double.infinity, height: 50,
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: _amber, foregroundColor: Colors.white,
+                backgroundColor: AppColors.primary, foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
               onPressed: () async {
@@ -595,7 +595,7 @@ class _PantallaProductosGrupoMarcaState extends State<_PantallaProductosGrupoMar
           : ElevatedButton(
               onPressed: () => _agregar(Map.from(p)),
               style: ElevatedButton.styleFrom(
-                backgroundColor: _amber, foregroundColor: Colors.white,
+                backgroundColor: AppColors.primary, foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 minimumSize: Size.zero, tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -675,7 +675,7 @@ class _CatalogoMaestroConRubroState extends State<_CatalogoMaestroConRubro> {
         ]),
       ),
       body: _cargando
-        ? const Center(child: CircularProgressIndicator(color: _amber))
+        ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
         : _marcas.isEmpty
           ? Center(child: Padding(
               padding: const EdgeInsets.all(32),
@@ -789,12 +789,12 @@ class _CatalogoMaestroConRubroState extends State<_CatalogoMaestroConRubro> {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                               decoration: BoxDecoration(
-                                color: _amber.withValues(alpha: 0.1),
+                                color: AppColors.primary.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: _amber.withValues(alpha: 0.5)),
+                                border: Border.all(color: AppColors.primary.withValues(alpha: 0.5)),
                               ),
                               child: const Text('+ Agregar', textAlign: TextAlign.center,
-                                style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: _amber)),
+                                style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: AppColors.primary)),
                             ),
                         ]),
                       ),

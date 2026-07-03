@@ -1,12 +1,12 @@
-// Pantalla de verificación de email. Se llega acá desde:
+﻿// Pantalla de verificación de email. Se llega acá desde:
 // - El registro (justo después de crear usuario + comercio)
 // - El login (cuando el backend devuelve 403 email_no_verificado)
 // - El splash (cuando el usuario tiene token pero email_verificado = false)
 import 'package:flutter/material.dart';
+import '../core/app_colors.dart';
 import '../services/api_service.dart';
 import 'main_screen.dart';
 
-const _amber = Color(0xFFE07B00);
 const _textDark = Color(0xFF1A1A1A);
 
 class VerificarEmailScreen extends StatefulWidget {
@@ -112,7 +112,7 @@ class _VerificarEmailScreenState extends State<VerificarEmailScreen> {
               child: const Text('Cancelar'),
             ),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: _amber, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
               onPressed: _cambiandoEmail ? null : () async {
                 final nuevo = nuevoEmailCtrl.text.trim();
                 if (nuevo.isEmpty || !nuevo.contains('@')) {
@@ -169,7 +169,7 @@ class _VerificarEmailScreenState extends State<VerificarEmailScreen> {
           padding: const EdgeInsets.all(24),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             const SizedBox(height: 40),
-            const Icon(Icons.mark_email_unread_outlined, size: 56, color: _amber),
+            const Icon(Icons.mark_email_unread_outlined, size: 56, color: AppColors.primary),
             const SizedBox(height: 20),
             const Text(
               'Verificá tu email',
@@ -184,9 +184,9 @@ class _VerificarEmailScreenState extends State<VerificarEmailScreen> {
             GestureDetector(
               onTap: _mostrarDialogoModificarEmail,
               child: Row(children: [
-                const Icon(Icons.edit_outlined, size: 14, color: _amber),
+                const Icon(Icons.edit_outlined, size: 14, color: AppColors.primary),
                 const SizedBox(width: 4),
-                const Text('¿Email incorrecto? Modificar', style: TextStyle(fontSize: 13, color: _amber, fontWeight: FontWeight.w600)),
+                const Text('¿Email incorrecto? Modificar', style: TextStyle(fontSize: 13, color: AppColors.primary, fontWeight: FontWeight.w600)),
               ]),
             ),
             const SizedBox(height: 28),
@@ -229,7 +229,7 @@ class _VerificarEmailScreenState extends State<VerificarEmailScreen> {
               child: ElevatedButton(
                 onPressed: _cargando ? null : _verificar,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: _amber,
+                  backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
@@ -244,7 +244,7 @@ class _VerificarEmailScreenState extends State<VerificarEmailScreen> {
                 onPressed: _reenviando ? null : _reenviar,
                 child: Text(
                   _reenviando ? 'Enviando...' : 'No me llegó el código, reenviar',
-                  style: const TextStyle(color: _amber),
+                  style: const TextStyle(color: AppColors.primary),
                 ),
               ),
             ),
@@ -257,7 +257,7 @@ class _VerificarEmailScreenState extends State<VerificarEmailScreen> {
                 border: Border.all(color: Colors.orange.shade200),
               ),
               child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                const Icon(Icons.info_outline, color: _amber, size: 18),
+                const Icon(Icons.info_outline, color: AppColors.primary, size: 18),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(

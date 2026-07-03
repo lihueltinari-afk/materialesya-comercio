@@ -11,6 +11,10 @@ import 'legal_screen.dart';
 import 'mapa_confirmar_ubicacion_screen.dart';
 import 'config_rubros_screen.dart';
 import 'config_comision_screen.dart';
+import 'stock_screen.dart';
+import 'horarios_especiales_screen.dart';
+import 'metricas_screen.dart';
+import 'sucursales_screen.dart';
 
 class PerfilScreen extends StatefulWidget {
   const PerfilScreen({super.key});
@@ -669,6 +673,38 @@ class _PerfilScreenState extends State<PerfilScreen> with WidgetsBindingObserver
                       subtitle: const Text('Cómo manejás la comisión de MaterialesYa'),
                       trailing: const Icon(Icons.chevron_right),
                       onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ConfigComisionScreen())),
+                    ),
+                    const Divider(height: 1),
+                    ListTile(
+                      leading: const Icon(Icons.inventory_2_outlined, color: AppColors.primary),
+                      title: const Text('Mi Stock'),
+                      subtitle: const Text('Control de inventario y alertas'),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const StockScreen())),
+                    ),
+                    const Divider(height: 1),
+                    ListTile(
+                      leading: const Icon(Icons.event_outlined, color: AppColors.primary),
+                      title: const Text('Horarios Especiales'),
+                      subtitle: const Text('Feriados y días excepcionales'),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HorariosEspecialesScreen())),
+                    ),
+                    const Divider(height: 1),
+                    ListTile(
+                      leading: const Icon(Icons.bar_chart_rounded, color: AppColors.primary),
+                      title: const Text('Métricas'),
+                      subtitle: const Text('Ingresos, pedidos y top productos'),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MetricasScreen())),
+                    ),
+                    const Divider(height: 1),
+                    ListTile(
+                      leading: const Icon(Icons.store_outlined, color: AppColors.primary),
+                      title: const Text('Mis Sucursales'),
+                      subtitle: const Text('Gestioná tus locales'),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SucursalesScreen())),
                     ),
                   ]),
                 ),

@@ -1,15 +1,15 @@
-// Pantalla para fijar la ubicación exacta del comercio en un mapa, evitando que quede mal
+﻿// Pantalla para fijar la ubicación exacta del comercio en un mapa, evitando que quede mal
 // cargada (ej: una calle de otra ciudad). Busca la dirección escrita con Nominatim
 // (OpenStreetMap, gratuito, sin API key) para centrar el mapa, y el usuario confirma/ajusta
 // el pin a mano tocando el mapa antes de guardar.
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import '../core/app_colors.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:http/http.dart' as http;
 
-const _amber = Color(0xFFE07B00);
 const _textDark = Color(0xFF1A1A1A);
 
 class MapaConfirmarUbicacionScreen extends StatefulWidget {
@@ -103,13 +103,13 @@ class _MapaConfirmarUbicacionScreenState extends State<MapaConfirmarUbicacionScr
               onChanged: _onCambioTexto,
               decoration: InputDecoration(
                 hintText: 'Ej: Av. San Martín 1234',
-                prefixIcon: const Icon(Icons.search, color: _amber),
+                prefixIcon: const Icon(Icons.search, color: AppColors.primary),
                 filled: true, fillColor: Colors.grey.shade50,
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade300)),
-                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: _amber)),
+                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary)),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
                 suffixIcon: _buscando
-                  ? const Padding(padding: EdgeInsets.all(12), child: SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: _amber)))
+                  ? const Padding(padding: EdgeInsets.all(12), child: SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary)))
                   : null,
               ),
             ),
@@ -129,7 +129,7 @@ class _MapaConfirmarUbicacionScreenState extends State<MapaConfirmarUbicacionScr
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                       child: Row(children: [
-                        const Icon(Icons.location_on_outlined, color: _amber, size: 18),
+                        const Icon(Icons.location_on_outlined, color: AppColors.primary, size: 18),
                         const SizedBox(width: 10),
                         Expanded(child: Text(s['nombre'] as String,
                           style: const TextStyle(fontSize: 13, color: _textDark))),
@@ -155,7 +155,7 @@ class _MapaConfirmarUbicacionScreenState extends State<MapaConfirmarUbicacionScr
               children: [
                 TileLayer(urlTemplate: 'https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png', userAgentPackageName: 'com.materialesya.comercio'),
                 MarkerLayer(markers: [
-                  Marker(point: _pin, width: 44, height: 44, child: const Icon(Icons.location_pin, color: _amber, size: 44)),
+                  Marker(point: _pin, width: 44, height: 44, child: const Icon(Icons.location_pin, color: AppColors.primary, size: 44)),
                 ]),
               ],
             ),
@@ -169,7 +169,7 @@ class _MapaConfirmarUbicacionScreenState extends State<MapaConfirmarUbicacionScr
               width: double.infinity, height: 50,
               child: ElevatedButton(
                 onPressed: () => Navigator.pop(context, {'lat': _pin.latitude, 'lng': _pin.longitude, 'direccion': _direccionCtrl.text.trim()}),
-                style: ElevatedButton.styleFrom(backgroundColor: _amber, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
                 child: const Text('Confirmar esta ubicación', style: TextStyle(fontWeight: FontWeight.w700)),
               ),
             ),

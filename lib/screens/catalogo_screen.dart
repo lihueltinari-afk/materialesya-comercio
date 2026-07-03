@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import '../core/app_colors.dart';
 import '../services/api_service.dart';
 import 'carga_masiva_screen.dart';
 import 'excel_precios_screen.dart';
@@ -6,7 +7,6 @@ import 'marcas_screen.dart';
 import 'catalogo_navegacion_screen.dart';
 import 'catalogo_por_rubros_screen.dart';
 
-const _amber = Color(0xFFE07B00);
 const _textDark = Color(0xFF1A1A1A);
 const _success = Color(0xFF2E7D32);
 
@@ -190,7 +190,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
           SizedBox(
             width: double.infinity, height: 50,
             child: ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: _amber, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
               onPressed: () async {
                 final precio = double.tryParse(precioCtrl.text);
                 final stock = int.tryParse(stockCtrl.text);
@@ -256,8 +256,8 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                 await Navigator.push(context, MaterialPageRoute(builder: (_) => const CargaMasivaScreen()));
                 _cargarMisProductos();
               },
-              icon: const Icon(Icons.upload_file, size: 14, color: _amber),
-              label: const Text('CSV', style: TextStyle(fontSize: 11, color: _amber, fontWeight: FontWeight.w700)),
+              icon: const Icon(Icons.upload_file, size: 14, color: AppColors.primary),
+              label: const Text('CSV', style: TextStyle(fontSize: 11, color: AppColors.primary, fontWeight: FontWeight.w700)),
               style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 8), tapTargetSize: MaterialTapTargetSize.shrinkWrap),
             ),
             const SizedBox(width: 4),
@@ -303,7 +303,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
       ),
       Expanded(
         child: _cargando
-          ? const Center(child: CircularProgressIndicator(color: _amber))
+          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
           : _misProductos.isEmpty
             ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
                 const Icon(Icons.inventory_2_outlined, size: 48, color: Colors.grey),
@@ -642,7 +642,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
             // Activo toggle
             Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
               const Text('Visible en tu tienda', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
-              Switch(value: activo, activeColor: _amber, onChanged: (v) async {
+              Switch(value: activo, activeColor: AppColors.primary, onChanged: (v) async {
                 setModal(() => activo = v);
                 await ApiService.toggleProductoActivo(prod['producto_id'] as int, v);
                 _cargarMisProductos();
@@ -674,7 +674,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                 ])),
                 Switch(
                   value: trasladarComision,
-                  activeColor: _amber,
+                  activeColor: AppColors.primary,
                   onChanged: (v) => setModal(() { trasladarComision = v; configIndividual = true; }),
                 ),
               ]),
@@ -693,13 +693,13 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                 decoration: BoxDecoration(
                   color: trasladarComision ? const Color(0xFFFFF8E1) : const Color(0xFFF0FFF0),
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: trasladarComision ? _amber : const Color(0xFF2E7D32), width: 0.8),
+                  border: Border.all(color: trasladarComision ? AppColors.primary : const Color(0xFF2E7D32), width: 0.8),
                 ),
                 child: Column(children: [
                   Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                     const Text('💰 El cliente verá:', style: TextStyle(fontSize: 11)),
                     Text('\$${publicado.toInt()}',
-                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: _amber)),
+                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.primary)),
                   ]),
                   const SizedBox(height: 3),
                   Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
@@ -725,17 +725,17 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
               decoration: BoxDecoration(
                 color: ofertaActiva ? const Color(0xFFFFF8E1) : Colors.grey.shade50,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: ofertaActiva ? _amber : Colors.grey.shade200, width: ofertaActiva ? 1.5 : 1),
+                border: Border.all(color: ofertaActiva ? AppColors.primary : Colors.grey.shade200, width: ofertaActiva ? 1.5 : 1),
               ),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                   Row(children: [
-                    Icon(Icons.local_offer_rounded, size: 16, color: ofertaActiva ? _amber : Colors.grey),
+                    Icon(Icons.local_offer_rounded, size: 16, color: ofertaActiva ? AppColors.primary : Colors.grey),
                     const SizedBox(width: 6),
                     Text('Publicar oferta', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800,
-                      color: ofertaActiva ? _amber : const Color(0xFF1A1A1A))),
+                      color: ofertaActiva ? AppColors.primary : const Color(0xFF1A1A1A))),
                   ]),
-                  Switch(value: ofertaActiva, activeColor: _amber,
+                  Switch(value: ofertaActiva, activeColor: AppColors.primary,
                     onChanged: (v) => setModal(() => ofertaActiva = v)),
                 ]),
                 if (ofertaActiva) ...[
@@ -749,7 +749,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                       filled: true, fillColor: Colors.white,
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                       focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(color: _amber, width: 1.5)),
+                        borderSide: const BorderSide(color: AppColors.primary, width: 1.5)),
                     )),
                   const SizedBox(height: 12),
                   const Text('Válida hasta', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
@@ -762,7 +762,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                         firstDate: DateTime.now(),
                         lastDate: DateTime.now().add(const Duration(days: 365)),
                         builder: (c, w) => Theme(data: ThemeData.light().copyWith(
-                          colorScheme: const ColorScheme.light(primary: _amber)), child: w!),
+                          colorScheme: const ColorScheme.light(primary: AppColors.primary)), child: w!),
                       );
                       if (picked != null) setModal(() => ofertaHasta = picked);
                     },
@@ -772,7 +772,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                         border: Border.all(color: Colors.grey.shade300),
                         borderRadius: BorderRadius.circular(10)),
                       child: Row(children: [
-                        const Icon(Icons.calendar_today_outlined, size: 16, color: _amber),
+                        const Icon(Icons.calendar_today_outlined, size: 16, color: AppColors.primary),
                         const SizedBox(width: 8),
                         Text(
                           ofertaHasta != null
@@ -793,7 +793,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
             SizedBox(
               width: double.infinity, height: 50,
               child: ElevatedButton(
-                style: ElevatedButton.styleFrom(backgroundColor: _amber, foregroundColor: Colors.white,
+                style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
                 onPressed: () async {
                   final precioBase = double.tryParse(precioCtrl.text);
@@ -898,7 +898,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
           boxShadow: sel ? [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 4)] : null,
         ),
         alignment: Alignment.center,
-        child: Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: sel ? _amber : Colors.grey.shade600)),
+        child: Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: sel ? AppColors.primary : Colors.grey.shade600)),
       ),
     );
   }
@@ -911,7 +911,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
         margin: const EdgeInsets.only(right: 8),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
         decoration: BoxDecoration(
-          color: sel ? _amber : Colors.grey.shade100,
+          color: sel ? AppColors.primary : Colors.grey.shade100,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: sel ? Colors.white : Colors.grey.shade700)),
@@ -942,7 +942,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
         ElevatedButton(
           onPressed: () => _mostrarActivar(Map.from(prod)),
           style: ElevatedButton.styleFrom(
-            backgroundColor: _amber, foregroundColor: Colors.white,
+            backgroundColor: AppColors.primary, foregroundColor: Colors.white,
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             minimumSize: Size.zero, tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -981,7 +981,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
           SizedBox(
             width: double.infinity, height: 50,
             child: ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: _amber, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
               onPressed: () async {
                 final precio = double.tryParse(precioCtrl.text);
                 if (precio == null || precio <= 0) return;
@@ -1034,7 +1034,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
         ])),
         const SizedBox(width: 8),
         Column(mainAxisSize: MainAxisSize.min, children: [
-          Switch(value: activo, activeColor: _amber, onChanged: (v) => _toggleActivo(prod, v)),
+          Switch(value: activo, activeColor: AppColors.primary, onChanged: (v) => _toggleActivo(prod, v)),
           TextButton(
             onPressed: () => _abrirDetalleProducto(Map.from(prod)),
             style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: Size.zero, tapTargetSize: MaterialTapTargetSize.shrinkWrap),

@@ -1,11 +1,11 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'package:flutter/material.dart';
+import '../core/app_colors.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:file_picker/file_picker.dart';
 import '../services/api_service.dart';
 
 // ─── Colores ──────────────────────────────────────────────────────────────────
-const _amber  = Color(0xFFE07B00);
 const _navy   = Color(0xFF1E3A5F);
 const _dark   = Color(0xFF1A1A1A);
 const _grey   = Color(0xFF888888);
@@ -144,13 +144,13 @@ class _ExcelPreciosScreenState extends State<ExcelPreciosScreen> {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: _amber.withOpacity(0.5), width: 2, style: BorderStyle.solid),
-            boxShadow: [BoxShadow(color: _amber.withOpacity(0.08), blurRadius: 12, offset: const Offset(0, 4))],
+            border: Border.all(color: AppColors.primary.withOpacity(0.5), width: 2, style: BorderStyle.solid),
+            boxShadow: [BoxShadow(color: AppColors.primary.withOpacity(0.08), blurRadius: 12, offset: const Offset(0, 4))],
           ),
           child: _cargando
-            ? const Center(child: CircularProgressIndicator(color: _amber))
+            ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
             : Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                Icon(Icons.cloud_upload_outlined, size: 52, color: _amber),
+                Icon(Icons.cloud_upload_outlined, size: 52, color: AppColors.primary),
                 const SizedBox(height: 12),
                 Text('Tocá para elegir tu archivo', style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w700, color: _dark)),
                 const SizedBox(height: 4),
@@ -291,7 +291,7 @@ class _ExcelPreciosScreenState extends State<ExcelPreciosScreen> {
       child: Row(children: [
         SizedBox(width: 28, height: 28, child:
           status == 2 ? const Icon(Icons.check_circle, color: _green, size: 24)
-          : status == 1 ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: _amber))
+          : status == 1 ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary))
           : Icon(Icons.radio_button_unchecked, color: Colors.grey.shade300, size: 24)
         ),
         const SizedBox(width: 12),
@@ -507,7 +507,7 @@ class _ExcelPreciosScreenState extends State<ExcelPreciosScreen> {
           SizedBox(width: double.infinity, child: ElevatedButton(
             onPressed: pendientes == 0 ? () => setState(() => _pantalla = 3) : null,
             style: ElevatedButton.styleFrom(
-              backgroundColor: _amber, foregroundColor: Colors.white, disabledBackgroundColor: Colors.grey.shade300,
+              backgroundColor: AppColors.primary, foregroundColor: Colors.white, disabledBackgroundColor: Colors.grey.shade300,
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
@@ -657,7 +657,7 @@ class _ExcelPreciosScreenState extends State<ExcelPreciosScreen> {
                 child: Text('${e['score']}% similar', style: GoogleFonts.poppins(fontSize: 10, color: _yellow, fontWeight: FontWeight.w700))),
               const SizedBox(height: 4),
               Text('\$${_fmt((e['precioNuevo'] as num?)?.toDouble() ?? 0)}',
-                style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w800, color: _amber)),
+                style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.primary)),
             ]),
           ]),
           if (dec == 'pendiente') ...[
@@ -738,7 +738,7 @@ class _ExcelPreciosScreenState extends State<ExcelPreciosScreen> {
                 prefixText: '\$',
                 isDense: true,
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: _amber)),
+                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: AppColors.primary)),
               ),
               style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w700),
             ),
@@ -795,9 +795,9 @@ class _ExcelPreciosScreenState extends State<ExcelPreciosScreen> {
               autofocus: true,
               decoration: InputDecoration(
                 hintText: 'Ej: Cemento Portland 50kg',
-                prefixIcon: const Icon(Icons.search, color: _amber),
+                prefixIcon: const Icon(Icons.search, color: AppColors.primary),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: _amber, width: 2)),
+                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary, width: 2)),
               ),
               onChanged: (q) async {
                 if (q.length < 2) return;
@@ -811,7 +811,7 @@ class _ExcelPreciosScreenState extends State<ExcelPreciosScreen> {
             )),
             const SizedBox(height: 8),
             Expanded(child: buscando
-              ? const Center(child: CircularProgressIndicator(color: _amber))
+              ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
               : ListView.separated(
                   controller: sc,
                   padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -822,7 +822,7 @@ class _ExcelPreciosScreenState extends State<ExcelPreciosScreen> {
                     return ListTile(
                       title: Text(p['nombre'] ?? '', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w700)),
                       subtitle: Text(p['marca'] ?? '', style: GoogleFonts.poppins(fontSize: 11, color: _grey)),
-                      trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: _amber),
+                      trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.primary),
                       onTap: () {
                         Navigator.pop(ctx);
                         setState(() {
@@ -857,7 +857,7 @@ class _ExcelPreciosScreenState extends State<ExcelPreciosScreen> {
     return ListView(padding: const EdgeInsets.all(20), children: [
       const SizedBox(height: 16),
       Center(child: Column(children: [
-        const Icon(Icons.fact_check_outlined, size: 52, color: _amber),
+        const Icon(Icons.fact_check_outlined, size: 52, color: AppColors.primary),
         const SizedBox(height: 12),
         Text('¿Confirmás estos cambios?', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w800, color: _dark), textAlign: TextAlign.center),
         const SizedBox(height: 4),
@@ -872,7 +872,7 @@ class _ExcelPreciosScreenState extends State<ExcelPreciosScreen> {
           if (nuevosAgregar > 0) _filResumen('🔵 Agregar $nuevosAgregar productos nuevos', _blue, true),
           if (confirmadosSi > 0) _filResumen('🟡 Actualizar $confirmadosSi productos confirmados', _yellow, true),
           if (desactivados > 0) _filResumen('🔴 Desactivar $desactivados productos', _red, true),
-          if (precioManual > 0) _filResumen('✏️ Actualizar precio manual de $precioManual productos', _amber, true),
+          if (precioManual > 0) _filResumen('✏️ Actualizar precio manual de $precioManual productos', AppColors.primary, true),
           _filResumen('📌 Mantener $mantener productos sin cambios', _grey, false),
         ]),
       ),
@@ -880,7 +880,7 @@ class _ExcelPreciosScreenState extends State<ExcelPreciosScreen> {
       SizedBox(width: double.infinity, child: ElevatedButton(
         onPressed: _cargando ? null : _aplicarCambios,
         style: ElevatedButton.styleFrom(
-          backgroundColor: _amber, foregroundColor: Colors.white,
+          backgroundColor: AppColors.primary, foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(vertical: 18),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         ),
@@ -1002,7 +1002,7 @@ class _ExcelPreciosScreenState extends State<ExcelPreciosScreen> {
         const Spacer(),
         SizedBox(width: double.infinity, child: ElevatedButton(
           onPressed: () => Navigator.pop(context),
-          style: ElevatedButton.styleFrom(backgroundColor: _amber, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
+          style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
           child: Text('Ver mi catálogo actualizado', style: GoogleFonts.poppins(fontWeight: FontWeight.w800, fontSize: 15)),
         )),
         const SizedBox(height: 12),
@@ -1049,7 +1049,7 @@ class _ExcelPreciosScreenState extends State<ExcelPreciosScreen> {
     if (_historial.isEmpty && !_cargandoHistorial) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _cargarHistorial());
     }
-    if (_cargandoHistorial) return const Center(child: CircularProgressIndicator(color: _amber));
+    if (_cargandoHistorial) return const Center(child: CircularProgressIndicator(color: AppColors.primary));
     if (_historial.isEmpty) return Center(child: Text('Aún no hay cargas registradas', style: GoogleFonts.poppins(color: _grey)));
     return ListView.separated(
       padding: const EdgeInsets.all(14),

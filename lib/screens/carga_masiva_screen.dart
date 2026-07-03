@@ -1,11 +1,11 @@
-// Pantalla para actualizar precios y stock de muchos productos a la vez,
+﻿// Pantalla para actualizar precios y stock de muchos productos a la vez,
 // subiendo un archivo CSV o Excel (.xlsx) con columnas: producto_id, precio, stock
 import 'package:excel/excel.dart' as xls;
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import '../core/app_colors.dart';
 import '../services/api_service.dart';
 
-const _amber = Color(0xFFE07B00);
 const _textDark = Color(0xFF1A1A1A);
 const _success = Color(0xFF2E7D32);
 
@@ -130,7 +130,7 @@ class _CargaMasivaScreenState extends State<CargaMasivaScreen> {
               onPressed: _procesando ? null : _elegirArchivo,
               icon: const Icon(Icons.upload_file),
               label: Text(_procesando ? 'Procesando...' : 'Elegir archivo (CSV o Excel)'),
-              style: ElevatedButton.styleFrom(backgroundColor: _amber, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
             ),
           ),
           if (_nombreArchivo != null) Padding(
@@ -139,7 +139,7 @@ class _CargaMasivaScreenState extends State<CargaMasivaScreen> {
           ),
           if (_procesando) const Padding(
             padding: EdgeInsets.only(top: 20),
-            child: Center(child: CircularProgressIndicator(color: _amber)),
+            child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
           ),
           if (_error != null) Container(
             margin: const EdgeInsets.only(top: 16),
@@ -160,7 +160,7 @@ class _CargaMasivaScreenState extends State<CargaMasivaScreen> {
                 const SizedBox(height: 4),
                 if ((_resultado!['conTraslado'] ?? 0) > 0)
                   Text('• ${_resultado!['conTraslado']} producto(s) trasladando comisión al cliente 🏷️',
-                    style: const TextStyle(fontSize: 11, color: _amber)),
+                    style: const TextStyle(fontSize: 11, color: AppColors.primary)),
                 if ((_resultado!['sinTraslado'] ?? 0) > 0)
                   Text('• ${_resultado!['sinTraslado']} producto(s) absorbiendo la comisión 💼',
                     style: TextStyle(fontSize: 11, color: Colors.grey.shade700)),

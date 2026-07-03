@@ -1,10 +1,9 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api_service.dart';
 import '../core/app_colors.dart';
 
-const _amber = Color(0xFFE07B00);
 const _navy = Color(0xFF1E3A5F);
 const _dark = Color(0xFF1A1A1A);
 const _grey = Color(0xFF888888);
@@ -92,7 +91,7 @@ class _ConfigComisionScreenState extends State<ConfigComisionScreen> {
         ],
       ),
       body: _cargando
-        ? const Center(child: CircularProgressIndicator(color: _amber))
+        ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
         : ListView(
             padding: const EdgeInsets.all(16),
             children: [
@@ -150,7 +149,7 @@ class _ConfigComisionScreenState extends State<ConfigComisionScreen> {
                     Switch(
                       value: _porProducto,
                       onChanged: (v) => setState(() => _porProducto = v),
-                      activeColor: _amber,
+                      activeColor: AppColors.primary,
                     ),
                   ]),
                 ]),
@@ -183,7 +182,7 @@ class _ConfigComisionScreenState extends State<ConfigComisionScreen> {
                 child: ElevatedButton(
                   onPressed: _guardando ? null : _guardar,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: _amber, foregroundColor: Colors.white,
+                    backgroundColor: AppColors.primary, foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                   ),
                   child: _guardando
@@ -202,9 +201,9 @@ class _ConfigComisionScreenState extends State<ConfigComisionScreen> {
       margin: const EdgeInsets.only(bottom: 20),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: LinearGradient(colors: [_amber.withOpacity(0.12), _amber.withOpacity(0.05)]),
+        gradient: LinearGradient(colors: [AppColors.primary.withOpacity(0.12), AppColors.primary.withOpacity(0.05)]),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _amber.withOpacity(0.4)),
+        border: Border.all(color: AppColors.primary.withOpacity(0.4)),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
@@ -226,7 +225,7 @@ class _ConfigComisionScreenState extends State<ConfigComisionScreen> {
           child: ElevatedButton(
             onPressed: _cerrarTooltip,
             style: ElevatedButton.styleFrom(
-              backgroundColor: _amber, foregroundColor: Colors.white,
+              backgroundColor: AppColors.primary, foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               padding: const EdgeInsets.symmetric(vertical: 10),
             ),
@@ -261,11 +260,11 @@ class _ConfigComisionScreenState extends State<ConfigComisionScreen> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: seleccionado ? _amber : Colors.grey.shade200,
+            color: seleccionado ? AppColors.primary : Colors.grey.shade200,
             width: seleccionado ? 2 : 1,
           ),
           boxShadow: seleccionado
-            ? [BoxShadow(color: _amber.withOpacity(0.15), blurRadius: 8, offset: const Offset(0, 2))]
+            ? [BoxShadow(color: AppColors.primary.withOpacity(0.15), blurRadius: 8, offset: const Offset(0, 2))]
             : [],
         ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -275,12 +274,12 @@ class _ConfigComisionScreenState extends State<ConfigComisionScreen> {
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(titulo,
                 style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w800,
-                  color: seleccionado ? _amber : _dark)),
+                  color: seleccionado ? AppColors.primary : _dark)),
               Text(subtitulo,
                 style: GoogleFonts.poppins(fontSize: 11, color: _grey)),
             ])),
             Icon(seleccionado ? Icons.radio_button_checked : Icons.radio_button_off,
-              color: seleccionado ? _amber : Colors.grey.shade300, size: 22),
+              color: seleccionado ? AppColors.primary : Colors.grey.shade300, size: 22),
           ]),
           const SizedBox(height: 12),
           ejemplo,
@@ -304,7 +303,7 @@ class _ConfigComisionScreenState extends State<ConfigComisionScreen> {
       child: Column(children: [
         _filaCosto('Precio que cargás', '\$${_fmt(precioBase)}', _grey),
         _filaCosto('Precio que ve el cliente', '\$${_fmt(precioCliente)}',
-          absorber ? _dark : _amber, bold: true),
+          absorber ? _dark : AppColors.primary, bold: true),
         const Padding(padding: EdgeInsets.symmetric(vertical: 4), child: Divider(height: 1)),
         _filaCosto('Comisión MaterialesYa (${_pct.toInt()}%)', '-\$${_fmt(comision)}', Colors.red.shade400),
         _filaCosto('Vos recibís', '\$${_fmt(recibe)}',

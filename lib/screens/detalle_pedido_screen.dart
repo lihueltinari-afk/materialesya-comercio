@@ -1,6 +1,8 @@
 ﻿import 'dart:async';
+import 'dart:js_interop';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:web/web.dart' as web;
 import '../core/app_colors.dart';
 import '../services/api_service.dart';
 import '../theme.dart';
@@ -269,6 +271,17 @@ class _DetallePedidoScreenState extends State<DetallePedidoScreen> {
     }
   }
 
+  Future<void> _descargarRemito() async {
+    if (_pedido == null) return;
+    final pedidoId = _pedido!['id'];
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Preparando remito...')),
+    );
+    final token = await ApiService.getToken();
+    final url = '${ApiService.baseUrl}/remito/$pedidoId/pdf?token=$token';
+    web.window.open(url.toJS, '_blank'.toJS);
+  }
+
   Future<void> _cambiarEstadoRepartoPropio(String nuevoEstado) async {
     setState(() => _procesando = true);
     final ok = await ApiService.cambiarEstadoPedido(widget.pedidoId, nuevoEstado);
@@ -291,6 +304,14 @@ class _DetallePedidoScreenState extends State<DetallePedidoScreen> {
         title: Text(_pedido != null ? 'Pedido #${_pedido!['numero'] ?? _pedido!['id']}' : 'Detalle del pedido'),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
+        actions: [
+          if (_pedido != null)
+            IconButton(
+              icon: const Icon(Icons.picture_as_pdf_outlined),
+              tooltip: 'Descargar remito PDF',
+              onPressed: _descargarRemito,
+            ),
+        ],
       ),
       body: _cargando
           ? const Center(child: CircularProgressIndicator(color: AppColors.primary))

@@ -49,52 +49,117 @@ const String kPrivacidadVersion = '1.0';
 const String kComisionesVersion = '1.0';
 
 // ---------------------------------------------------------------------------
-// DOCUMENTOS ADICIONALES — TEXTO PLACEHOLDER (BORRADOR)
-// TODO(legal): reemplazar por los textos definitivos provistos por el dueño.
+// DOCUMENTOS ADICIONALES
 const String politicaCookies = '''
-[BORRADOR — reemplazar por el texto definitivo]
+POLÍTICA DE COOKIES — MaterialesYa
+Última actualización: julio de 2025
 
-1. Qué son las cookies: pequeños archivos que se almacenan en tu dispositivo para recordar preferencias y mejorar tu experiencia.
+MaterialesYa utiliza tecnologías de almacenamiento local (cookies y equivalentes) para que la app funcione correctamente y para mejorar tu experiencia. A continuación te explicamos qué almacenamos y por qué.
 
-2. Cookies que usamos: técnicas (necesarias para el funcionamiento), de sesión (para mantenerte identificado) y analíticas (para entender el uso de la app).
+1. ¿QUÉ SON LAS COOKIES?
+Son pequeños archivos de texto o registros de datos que se guardan en tu dispositivo cuando usás la app o el sitio web de MaterialesYa. Nos permiten recordar tu sesión iniciada, tus preferencias y ciertos datos de uso.
 
-3. Gestión: podés administrar o eliminar las cookies desde la configuración de tu dispositivo o navegador. Deshabilitarlas puede afectar algunas funciones.
+2. TIPOS DE ALMACENAMIENTO QUE USAMOS
 
-4. Cambios: cualquier modificación a esta política será notificada a través de la app.
+a) Almacenamiento técnico esencial: necesario para que la app funcione. Incluye el token de autenticación que mantiene tu sesión iniciada, preferencias de configuración del panel, y datos temporales de operación. No podés desactivarlo sin afectar el funcionamiento de la app.
+
+b) Almacenamiento de sesión: datos que se borran cuando cerrás la app. Se usan para recordar el estado de acciones en curso (edición de productos, carga de precios).
+
+c) Almacenamiento analítico y de rendimiento: usamos datos anonimizados para entender cómo se usa la app y poder mejorarla. Estos datos no te identifican personalmente.
+
+d) Notificaciones push: si aceptás las notificaciones, guardamos un identificador de dispositivo (FCM token) para enviarte alertas sobre nuevos pedidos y actualizaciones de estado.
+
+3. DATOS QUE NO ALMACENAMOS LOCALMENTE
+No guardamos en tu dispositivo datos bancarios ni contraseñas en texto plano. Las liquidaciones son procesadas por Mercado Pago.
+
+4. CÓMO GESTIONAR EL ALMACENAMIENTO
+Podés eliminar los datos locales de la app desde Configuración → Aplicaciones → MaterialesYa → Borrar datos. Esto cerrará tu sesión y podrías perder preferencias guardadas.
+
+5. CAMBIOS EN ESTA POLÍTICA
+Cualquier modificación relevante será notificada a través de la app. El uso continuado implica la aceptación de la política actualizada.
+
+6. CONTACTO
+Para consultas sobre privacidad o cookies, escribinos a través del canal de soporte disponible en la app.
 ''';
 
 const String politicaCancelaciones = '''
-[BORRADOR — reemplazar por el texto definitivo]
+POLÍTICA DE CANCELACIONES — MaterialesYa (Panel Comercio)
+Última actualización: julio de 2025
 
-1. Cancelación del pedido: el comercio puede rechazar o cancelar un pedido por falta de stock u otros motivos, informándolo a través de la app.
+1. RECHAZO DE PEDIDOS POR EL COMERCIO
+El comercio tiene 5 minutos para aceptar o rechazar cada pedido entrante. Si no responde en ese plazo, el pedido se cancela automáticamente sin cargo para el comercio, pero una tasa alta de vencimientos puede afectar la visibilidad del comercio en la plataforma.
 
-2. Cancelación por el cliente: el cliente puede cancelar sin costo antes de que el comercio acepte el pedido o mientras esté en preparación.
+El comercio puede rechazar un pedido por: falta de stock, cierre imprevisto, u otras causas justificadas. En todos los casos el reembolso al cliente es total y automático.
 
-3. Reembolsos: los reembolsos se procesan a través del medio de pago original según los tiempos de Mercado Pago.
+2. CANCELACIÓN POR EL CLIENTE
+El cliente puede cancelar sin costo para el comercio en los estados "Pendiente" o "En preparación". Si el comercio ya incurrió en costos de preparación puede indicarlo; MaterialesYa evaluará el caso y podrá retener hasta un 20 % del valor como compensación, que se acreditará al comercio.
 
-4. Cambios: cualquier modificación a esta política será notificada a través de la app.
+3. PEDIDOS CON ENTREGA PROGRAMADA
+Si el cliente cancela un pedido programado con menos de 2 horas de anticipación, el comercio puede solicitar una compensación a través del canal de soporte. MaterialesYa evaluará cada caso.
+
+4. RECLAMOS DE CLIENTES POST-ENTREGA
+El cliente tiene 24 horas para reportar disconformidades (artículo incorrecto, faltante, daño). El comercio será notificado y tendrá 48 horas para responder. MaterialesYa puede mediar y resolver la disputa, pudiendo retener fondos de la liquidación para cubrir reembolsos validados.
+
+5. IMPACTO EN LIQUIDACIONES
+Las cancelaciones aceptadas y los reembolsos validados por reclamos se descuentan de la liquidación del período correspondiente.
+
+6. MODIFICACIONES
+MaterialesYa notificará cualquier cambio a través de la app con al menos 15 días de anticipación.
 ''';
 
 const String codigoConducta = '''
-[BORRADOR — reemplazar por el texto definitivo]
+CÓDIGO DE CONDUCTA — MaterialesYa
+Última actualización: julio de 2025
 
-1. Respeto: comercios, clientes y repartidores deben tratarse con respeto, sin discriminación ni agresiones.
+MaterialesYa es una comunidad formada por clientes, comercios y repartidores. Para que la experiencia sea buena para todos, pedimos que se respeten las siguientes normas.
 
-2. Honestidad: no se permite el uso fraudulento de la plataforma ni la publicación de información falsa sobre productos, precios o stock.
+1. RESPETO ENTRE USUARIOS
+Todos los participantes deben tratarse con respeto y cortesía. No se toleran insultos, amenazas, discriminación por ninguna causa ni acoso de ningún tipo.
 
-3. Cumplimiento: el comercio debe cumplir la normativa fiscal y comercial aplicable a su actividad.
+2. INFORMACIÓN VERAZ
+Publicá precios, stock y descripciones reales y actualizadas. La publicación de información engañosa (precios incorrectos, fotos de otros productos, stocks inflados) está prohibida y puede derivar en la baja de la cuenta y responsabilidad frente a los clientes afectados.
 
-4. Incumplimientos: MaterialesYa podrá suspender o dar de baja cuentas que incumplan este código.
+3. CUMPLIMIENTO FISCAL
+El comercio es responsable de emitir las facturas o comprobantes que correspondan según su actividad y de cumplir sus obligaciones ante AFIP y la ARBA (o el organismo tributario provincial que corresponda). MaterialesYa no actúa como agente de retención impositiva salvo en los casos establecidos por la normativa vigente.
+
+4. USO HONESTO DE LA PLATAFORMA
+No está permitido manipular calificaciones, crear cuentas falsas, acordar precios con otros comercios de manera anticompetitiva, ni intentar eludir las comisiones u otros mecanismos establecidos.
+
+5. RECLAMOS Y CONFLICTOS
+Los desacuerdos deben canalizarse a través de los mecanismos de reclamo disponibles en la app. MaterialesYa se reserva el derecho de mediar y tomar decisiones vinculantes sobre disputas entre partes.
+
+6. CONSECUENCIAS DEL INCUMPLIMIENTO
+El incumplimiento puede derivar en advertencias, suspensión temporal o baja definitiva de la cuenta, según la gravedad y reiteración de la conducta. En casos de fraude confirmado, MaterialesYa puede iniciar acciones legales.
+
+7. MODIFICACIONES
+MaterialesYa puede actualizar este código notificando a los comercios a través de la app.
 ''';
 
 const String politicaComisiones = '''
-[BORRADOR — reemplazar por el texto definitivo]
+POLÍTICA DE COMISIONES — MaterialesYa
+Última actualización: julio de 2025
+Versión vigente: 1.0
 
-1. Comisión de la plataforma: MaterialesYa cobra una comisión sobre cada pedido gestionado a través de la app. El porcentaje vigente se informa en este documento y en el panel del comercio.
+1. COMISIÓN DE LA PLATAFORMA
+MaterialesYa cobra una comisión del 8 % (ocho por ciento) sobre el valor total de cada pedido gestionado a través de la plataforma, excluido el costo de envío. Esta comisión cubre el acceso a la tecnología, la gestión de pagos, el soporte y la visibilidad en la app.
 
-2. Liquidación: las comisiones se descuentan automáticamente de las liquidaciones al comercio según los tiempos de Mercado Pago.
+Ejemplo: pedido con productos por \$ 10.000 → comisión MaterialesYa = \$ 800.
 
-3. Actualizaciones: MaterialesYa podrá actualizar la comisión vigente notificando a los comercios a través de la app con antelación razonable.
+2. BASE DE CÁLCULO
+La comisión se aplica sobre el subtotal de productos (precio de lista publicado por el comercio × cantidad), sin incluir el costo de envío ni impuestos adicionales.
 
-4. Aceptación: al registrarse y operar en la plataforma, el comercio acepta la política de comisiones vigente.
+3. MECANISMO DE COBRO
+La comisión se descuenta automáticamente en el momento de la liquidación. MaterialesYa opera como marketplace a través de Mercado Pago: al realizarse el pago, el monto de la comisión se retiene directamente y el saldo neto se transfiere al comercio.
+
+4. LIQUIDACIÓN
+Las liquidaciones se realizan según la frecuencia configurada en el panel del comercio (diaria o semanal), a la cuenta bancaria / CBU / CVU informada. Las transferencias pueden demorar entre 1 y 3 días hábiles adicionales dependiendo de la entidad bancaria.
+
+5. PEDIDOS CANCELADOS
+No se cobra comisión sobre pedidos que el comercio rechazó o que se cancelaron antes de que el repartidor retirara la mercadería. Si el reembolso al cliente ocurre después del cobro, la comisión se devuelve en la liquidación siguiente.
+
+6. ACTUALIZACIONES DE COMISIÓN
+MaterialesYa podrá revisar el porcentaje de comisión notificando a los comercios activos con al menos 30 días de anticipación a través de la app y por email. La operación continuada en la plataforma luego del vencimiento del plazo implica la aceptación del nuevo porcentaje.
+
+7. CONSULTAS
+Para consultas sobre liquidaciones o comisiones, utilizá el canal de soporte disponible en la app o escribinos a soporte@materialesya.com.ar.
 ''';

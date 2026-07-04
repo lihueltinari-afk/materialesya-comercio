@@ -28,13 +28,12 @@ class _MaterialesYaComercioAppState extends State<MaterialesYaComercioApp> {
   @override
   void initState() {
     super.initState();
-    // MODO DEMO: sesión expirada deshabilitada
-    // ApiService.onSesionExpirada = () {
-    //   _navKey.currentState?.pushAndRemoveUntil(
-    //     MaterialPageRoute(builder: (_) => const LoginScreen(sesionExpirada: true)),
-    //     (_) => false,
-    //   );
-    // };
+    ApiService.onSesionExpirada = () {
+      _navKey.currentState?.pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const LoginScreen(sesionExpirada: true)),
+        (_) => false,
+      );
+    };
   }
 
   @override

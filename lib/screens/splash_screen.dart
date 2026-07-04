@@ -26,9 +26,30 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
 
   Future<void> _checkSession() async {
     if (!mounted) return;
-    // MODO DEMO: login automático con cuenta demo
-    await ApiService.loginDemo('comercio@demo.com', 'demo1234');
+
+    // Verificar sesión existente
+    final token = await ApiService.obtenerToken();
     if (!mounted) return;
+    if (token == null || token.isEmpty) {
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const LoginScreen()));
+      return;
+    }
+
+    // Verificar que el token sigue siendo válido
+    final usuario = await ApiService.usuarioActualRemoto();
+    if (!mounted) return;
+    if (usuario == null) {
+      await ApiService.cerrarSesion();
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const LoginScreen()));
+      return;
+    }
+
+    // Verificar email
+    if (usuario['email_verificado'] == false) {
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => VerificarEmailScreen(email: usuario['email'] ?? '')));
+      return;
+    }
+
     Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const MainScreen()));
   }
 

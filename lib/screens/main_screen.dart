@@ -6,6 +6,8 @@ import 'pedidos_screen.dart';
 import 'catalogo_screen.dart';
 import 'perfil_screen.dart';
 import 'seleccion_rubros_screen.dart';
+import 'onboarding_comercio_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/reporte_error_button.dart';
 import '../widgets/offline_banner.dart';
 import '../widgets/adaptive_scaffold.dart';
@@ -30,20 +32,26 @@ class _MainScreenState extends State<MainScreen> {
     super.initState();
     _actualizarBadge();
     _timer = Timer.periodic(const Duration(seconds: 30), (_) => _actualizarBadge());
-    // Verificar si el comercio ya configuró sus rubros
-    WidgetsBinding.instance.addPostFrameCallback((_) => _verificarRubros());
+    // Verificar rubros y onboarding al primer ingreso
+    WidgetsBinding.instance.addPostFrameCallback((_) => _verificarRubrosYOnboarding());
   }
 
-  Future<void> _verificarRubros() async {
+  Future<void> _verificarRubrosYOnboarding() async {
     final res = await ApiService.get('/rubros/comercio');
     if (!mounted) return;
     if (res['status'] == 200 && res['data'] is List && (res['data'] as List).isEmpty) {
-      // No tiene rubros → mostrar pantalla de selección
       await Navigator.push(
         context,
-        MaterialPageRoute(
-          builder: (_) => const SeleccionRubrosScreen(esRegistro: true),
-        ),
+        MaterialPageRoute(builder: (_) => const SeleccionRubrosScreen(esRegistro: true)),
+      );
+    }
+    if (!mounted) return;
+    final prefs = await SharedPreferences.getInstance();
+    final done = prefs.getBool('onboarding_comercio_done') ?? false;
+    if (!done && mounted) {
+      await Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const OnboardingComercioScreen()),
       );
     }
   }

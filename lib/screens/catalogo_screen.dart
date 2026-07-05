@@ -1,4 +1,6 @@
-﻿import 'package:flutter/material.dart';
+﻿import 'dart:convert';
+import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
 import '../core/app_colors.dart';
 import '../services/api_service.dart';
 import 'carga_masiva_screen.dart';
@@ -684,8 +686,8 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
             // Preview precio publicado en tiempo real
             Builder(builder: (_) {
               final base = double.tryParse(precioCtrl.text) ?? 0;
-              final publicado = trasladarComision ? base * 1.10 : base;
-              final recibe = publicado * 0.90;
+              final publicado = trasladarComision ? base * 1.08 : base;
+              final recibe = publicado * 0.92;
               if (base <= 0) return const SizedBox.shrink();
               return Container(
                 margin: const EdgeInsets.only(bottom: 10),
@@ -1053,79 +1055,132 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
     final precioCtrl = TextEditingController();
     final stockCtrl = TextEditingController(text: '10');
     final descCtrl = TextEditingController();
-    final _formKey = GlobalKey<FormState>();
+    final formKey = GlobalKey<FormState>();
+    String? imagenUrl;
+    bool subiendoFoto = false;
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (ctx) => Padding(
-        padding: EdgeInsets.only(left: 20, right: 20, top: 20, bottom: MediaQuery.of(ctx).viewInsets.bottom + 24),
-        child: SingleChildScrollView(
-          child: Form(
-            key: _formKey,
-            child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Text('Agregar producto propio', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: _textDark)),
-              const SizedBox(height: 4),
-              const Text('El producto quedará pendiente de revisión antes de aparecer en el catálogo general.', style: TextStyle(fontSize: 11, color: Colors.grey)),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: nombreCtrl,
-                decoration: _inputDec('Nombre del producto *'),
-                validator: (v) => (v == null || v.trim().isEmpty) ? 'Requerido' : null,
-              ),
-              const SizedBox(height: 10),
-              Row(children: [
-                Expanded(child: TextFormField(controller: marcaCtrl, decoration: _inputDec('Marca *'), validator: (v) => (v == null || v.trim().isEmpty) ? 'Requerido' : null)),
-                const SizedBox(width: 10),
-                Expanded(child: TextFormField(controller: unidadCtrl, decoration: _inputDec('Unidad (ej: bolsa, m², litro)'))),
-              ]),
-              const SizedBox(height: 10),
-              Row(children: [
-                Expanded(child: TextFormField(controller: precioCtrl, keyboardType: TextInputType.number, decoration: _inputDec('Precio de venta (\$) *'), validator: (v) => (double.tryParse(v ?? '') == null) ? 'Precio inválido' : null)),
-                const SizedBox(width: 10),
-                Expanded(child: TextFormField(controller: stockCtrl, keyboardType: TextInputType.number, decoration: _inputDec('Stock inicial'))),
-              ]),
-              const SizedBox(height: 10),
-              TextFormField(controller: pesoCtrl, keyboardType: TextInputType.number, decoration: _inputDec('Peso por unidad (kg)')),
-              const SizedBox(height: 10),
-              TextFormField(controller: descCtrl, decoration: _inputDec('Descripción (opcional)'), maxLines: 2),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity, height: 50,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2E7D32), foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-                  onPressed: () async {
-                    if (!_formKey.currentState!.validate()) return;
-                    Navigator.pop(ctx);
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setS) => Padding(
+          padding: EdgeInsets.only(left: 20, right: 20, top: 20, bottom: MediaQuery.of(ctx).viewInsets.bottom + 24),
+          child: SingleChildScrollView(
+            child: Form(
+              key: formKey,
+              child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+                const Text('Agregar producto propio', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: _textDark)),
+                const SizedBox(height: 4),
+                const Text('El producto quedará pendiente de revisión antes de aparecer en el catálogo general.', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                const SizedBox(height: 16),
+
+                // Foto del producto
+                GestureDetector(
+                  onTap: subiendoFoto ? null : () async {
+                    final res = await FilePicker.platform.pickFiles(type: FileType.image, withData: true);
+                    if (res == null || res.files.isEmpty || res.files.first.bytes == null) return;
+                    setS(() => subiendoFoto = true);
                     try {
-                      await ApiService.post('/comercio/productos-propios', {
-                        'nombre': nombreCtrl.text.trim(),
-                        'marca': marcaCtrl.text.trim(),
-                        'unidad_venta': unidadCtrl.text.trim().isEmpty ? 'unidad' : unidadCtrl.text.trim(),
-                        'peso_kg': double.tryParse(pesoCtrl.text) ?? 1.0,
-                        'precio': double.parse(precioCtrl.text),
-                        'stock': int.tryParse(stockCtrl.text) ?? 0,
-                        'descripcion': descCtrl.text.trim(),
-                      });
-                      _cargarMisProductos();
-                      if (!context.mounted) return;
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                        content: Text('Producto enviado a revisión ✓'),
-                        backgroundColor: Color(0xFF2E7D32),
-                      ));
-                    } catch (e) {
-                      if (!context.mounted) return;
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                        content: Text('Error al guardar: $e'),
-                        backgroundColor: Colors.red,
-                      ));
+                      final bytes = res.files.first.bytes!;
+                      final ext = res.files.first.extension ?? 'jpg';
+                      final b64 = 'data:image/$ext;base64,${base64Encode(bytes)}';
+                      final resp = await ApiService.post('/upload', {'imagen': b64, 'carpeta': 'catalogo'});
+                      if (resp['status'] == 200 && resp['data']?['url'] != null) {
+                        setS(() { imagenUrl = resp['data']['url']; subiendoFoto = false; });
+                      } else {
+                        setS(() => subiendoFoto = false);
+                        if (ctx.mounted) ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('Error al subir la foto'), backgroundColor: Colors.red));
+                      }
+                    } catch (_) {
+                      setS(() => subiendoFoto = false);
                     }
                   },
-                  child: const Text('Enviar a revisión', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                  child: Container(
+                    height: 110, width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade50, borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.grey.shade200),
+                      image: imagenUrl != null ? DecorationImage(image: NetworkImage(imagenUrl!), fit: BoxFit.cover) : null,
+                    ),
+                    child: subiendoFoto
+                      ? const Center(child: CircularProgressIndicator(strokeWidth: 2))
+                      : imagenUrl == null
+                        ? Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                            Icon(Icons.add_a_photo_outlined, size: 32, color: Colors.grey.shade400),
+                            const SizedBox(height: 6),
+                            Text('Agregar foto', style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
+                          ])
+                        : Align(
+                            alignment: Alignment.topRight,
+                            child: Padding(
+                              padding: const EdgeInsets.all(6),
+                              child: CircleAvatar(radius: 12, backgroundColor: Colors.green, child: const Icon(Icons.check, size: 14, color: Colors.white)),
+                            ),
+                          ),
+                  ),
                 ),
-              ),
-            ]),
+                const SizedBox(height: 14),
+
+                TextFormField(
+                  controller: nombreCtrl,
+                  decoration: _inputDec('Nombre del producto *'),
+                  validator: (v) => (v == null || v.trim().isEmpty) ? 'Requerido' : null,
+                ),
+                const SizedBox(height: 10),
+                Row(children: [
+                  Expanded(child: TextFormField(controller: marcaCtrl, decoration: _inputDec('Marca *'), validator: (v) => (v == null || v.trim().isEmpty) ? 'Requerido' : null)),
+                  const SizedBox(width: 10),
+                  Expanded(child: TextFormField(controller: unidadCtrl, decoration: _inputDec('Unidad (ej: bolsa, m², litro)'))),
+                ]),
+                const SizedBox(height: 10),
+                Row(children: [
+                  Expanded(child: TextFormField(controller: precioCtrl, keyboardType: TextInputType.number, decoration: _inputDec('Precio de venta (\$) *'), validator: (v) => (double.tryParse(v ?? '') == null) ? 'Precio inválido' : null)),
+                  const SizedBox(width: 10),
+                  Expanded(child: TextFormField(controller: stockCtrl, keyboardType: TextInputType.number, decoration: _inputDec('Stock inicial'))),
+                ]),
+                const SizedBox(height: 10),
+                TextFormField(controller: pesoCtrl, keyboardType: TextInputType.number, decoration: _inputDec('Peso por unidad (kg)')),
+                const SizedBox(height: 10),
+                TextFormField(controller: descCtrl, decoration: _inputDec('Descripción (opcional)'), maxLines: 2),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity, height: 50,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2E7D32), foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                    onPressed: () async {
+                      if (!formKey.currentState!.validate()) return;
+                      Navigator.pop(ctx);
+                      try {
+                        await ApiService.post('/comercio/productos-propios', {
+                          'nombre': nombreCtrl.text.trim(),
+                          'marca': marcaCtrl.text.trim(),
+                          'unidad_venta': unidadCtrl.text.trim().isEmpty ? 'unidad' : unidadCtrl.text.trim(),
+                          'peso_kg': double.tryParse(pesoCtrl.text) ?? 1.0,
+                          'precio': double.parse(precioCtrl.text),
+                          'stock': int.tryParse(stockCtrl.text) ?? 0,
+                          'descripcion': descCtrl.text.trim(),
+                          if (imagenUrl != null) 'imagen_url': imagenUrl,
+                        });
+                        _cargarMisProductos();
+                        if (!context.mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                          content: Text('Producto enviado a revisión ✓'),
+                          backgroundColor: Color(0xFF2E7D32),
+                        ));
+                      } catch (e) {
+                        if (!context.mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                          content: Text('Error al guardar: $e'),
+                          backgroundColor: Colors.red,
+                        ));
+                      }
+                    },
+                    child: const Text('Enviar a revisión', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                  ),
+                ),
+              ]),
+            ),
           ),
         ),
       ),

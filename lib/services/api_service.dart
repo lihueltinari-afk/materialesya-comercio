@@ -1,7 +1,8 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart' show VoidCallback, kReleaseMode;
+import 'package:flutter/foundation.dart' show VoidCallback, kReleaseMode, kIsWeb;
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class ApiService {
   static const String _prod = 'https://materialesya-backend-production.up.railway.app/api';
@@ -52,15 +53,25 @@ class ApiService {
   }
 
   // ─── TOKEN Y SESIÓN ───────────────────────────────────────────────────────────
+  static const _secureStorage = FlutterSecureStorage(
+    aOptions: AndroidOptions(encryptedSharedPreferences: true),
+  );
 
   static Future<void> guardarToken(String token) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('token_comercio', token);
+    if (kIsWeb) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('token_comercio', token);
+    } else {
+      await _secureStorage.write(key: 'token_comercio', value: token);
+    }
   }
 
   static Future<String?> obtenerToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('token_comercio');
+    if (kIsWeb) {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getString('token_comercio');
+    }
+    return _secureStorage.read(key: 'token_comercio');
   }
 
   static Future<void> guardarSesion(String token, Map<String, dynamic> usuario) async {
@@ -70,8 +81,13 @@ class ApiService {
   }
 
   static Future<void> cerrarSesion() async {
+    if (kIsWeb) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('token_comercio');
+    } else {
+      await _secureStorage.delete(key: 'token_comercio');
+    }
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('token_comercio');
     await prefs.remove('comercio');
   }
 

@@ -279,7 +279,7 @@ class _DetallePedidoScreenState extends State<DetallePedidoScreen> {
     );
     final token = await ApiService.getToken();
     final url = '${ApiService.baseUrl}/remito/$pedidoId/pdf?token=$token';
-    web.window.open(url.toJS, '_blank'.toJS);
+    web.window.open(url, '_blank');
   }
 
   Future<void> _cambiarEstadoRepartoPropio(String nuevoEstado) async {
@@ -328,6 +328,10 @@ class _DetallePedidoScreenState extends State<DetallePedidoScreen> {
     final cliente = pedido['cliente'] ?? {};
     final items = List<dynamic>.from(pedido['items'] ?? pedido['productos'] ?? []);
     final total = double.tryParse(pedido['total']?.toString() ?? '0') ?? 0;
+    final comisionReal = double.tryParse(pedido['comision_plataforma']?.toString() ?? '') ?? (total * 0.08);
+    final montoComercio = double.tryParse(pedido['monto_comercio']?.toString() ?? '') ?? (total - comisionReal);
+    final subtotalProd = double.tryParse(pedido['subtotal']?.toString() ?? '') ?? total;
+    final pctComision = subtotalProd > 0 ? ((comisionReal / subtotalProd) * 100).round() : 8;
     final calificacion = pedido['calificacion'];
 
     return RefreshIndicator(
@@ -452,15 +456,19 @@ class _DetallePedidoScreenState extends State<DetallePedidoScreen> {
                     ),
                     child: Column(children: [
                       _filaDesglose('Precio cobrado al cliente', total, Colors.black87),
-                      _filaDesglose('Comisión MaterialesYa (10%)', -(total * 0.10), Colors.red.shade400),
+                      _filaDesglose('Comisión MaterialesYa ($pctComision%)', -comisionReal, Colors.red.shade400),
                       const Divider(height: 12),
-                      _filaDesglose('Lo que recibís vos', total * 0.90, const Color(0xFF2E7D32), bold: true),
+                      _filaDesglose('Lo que recibís vos', montoComercio, const Color(0xFF2E7D32), bold: true),
                     ]),
                   ),
                 ],
               ),
             ),
           ),
+          const SizedBox(height: 12),
+
+          // Estado del pago en escrow
+          _cardEscrow(pedido),
           const SizedBox(height: 12),
 
           // Calificación (si entregado)
@@ -649,6 +657,81 @@ class _DetallePedidoScreenState extends State<DetallePedidoScreen> {
     );
   }
 
+  Widget _cardEscrow(Map<String, dynamic> pedido) {
+    final escrowEstado = pedido['escrow_estado'] as String? ?? 'sin_pago';
+    final estado = pedido['estado'] as String? ?? '';
+
+    // Solo mostrar cuando hay un pago activo
+    if (escrowEstado == 'sin_pago' && estado == 'reservado') return const SizedBox.shrink();
+
+    final config = _escrowConfig(escrowEstado);
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            Icon(config['icono'] as IconData, color: config['color'] as Color, size: 20),
+            const SizedBox(width: 8),
+            Text('Estado del pago', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+            const Spacer(),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: (config['color'] as Color).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(config['label'] as String,
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: config['color'] as Color)),
+            ),
+          ]),
+          const SizedBox(height: 8),
+          Text(config['desc'] as String,
+              style: const TextStyle(fontSize: 13, color: Colors.grey)),
+        ]),
+      ),
+    );
+  }
+
+  Map<String, dynamic> _escrowConfig(String estado) {
+    switch (estado) {
+      case 'retenido':
+        return {
+          'icono': Icons.lock_clock_outlined,
+          'color': Colors.orange,
+          'label': 'Retenido',
+          'desc': 'El pago está retenido. Se libera cuando el cliente y el repartidor confirmen la entrega.',
+        };
+      case 'liberado':
+        return {
+          'icono': Icons.check_circle_rounded,
+          'color': const Color(0xFF27AE60),
+          'label': 'Liberado ✓',
+          'desc': 'El pago fue liberado. Se acreditará en tu cuenta según el plazo de Mercado Pago.',
+        };
+      case 'reembolsado':
+        return {
+          'icono': Icons.undo_rounded,
+          'color': Colors.red,
+          'label': 'Reembolsado',
+          'desc': 'El pago fue devuelto al cliente. Si esto fue un error, contactá a soporte.',
+        };
+      case 'disputa':
+        return {
+          'icono': Icons.gavel_rounded,
+          'color': Colors.purple,
+          'label': 'En disputa',
+          'desc': 'El cliente abrió una disputa. Un administrador la revisará en 48 horas.',
+        };
+      default:
+        return {
+          'icono': Icons.payment_rounded,
+          'color': Colors.grey,
+          'label': 'Sin pago',
+          'desc': 'El cliente aún no realizó el pago.',
+        };
+    }
+  }
+
   Widget _filaDesglose(String label, double valor, Color color, {bool bold = false}) {
     final negativo = valor < 0;
     return Padding(
@@ -675,7 +758,7 @@ class _DetallePedidoScreenState extends State<DetallePedidoScreen> {
   }
 
   Widget _itemRow(dynamic item) {
-    final nombre = item['nombre'] ?? item['producto']?['nombre'] ?? 'Producto';
+    final nombre = item['producto_nombre'] ?? item['nombre'] ?? item['producto']?['nombre'] ?? 'Producto';
     final cantidad = item['cantidad'] ?? 1;
     final precio = double.tryParse(item['precio']?.toString() ?? '0') ?? 0;
     final subtotal = double.tryParse(item['subtotal']?.toString() ?? '0') ?? (precio * cantidad);

@@ -5,8 +5,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class ApiService {
-  static const String _prod = 'https://materialesya-backend-production.up.railway.app/api';
-  static const String _dev = 'http://localhost:3000/api';
+  static const String _apiVersion = 'v1';
+  static const String _prod = 'https://materialesya-backend-production.up.railway.app/api/$_apiVersion';
+  static const String _dev = 'http://localhost:3000/api/$_apiVersion';
   // MODO DEMO: forzar localhost para testing local
   static String get _base {
     const env = String.fromEnvironment('API_URL', defaultValue: '');

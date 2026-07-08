@@ -174,7 +174,7 @@ class _RegistroScreenState extends State<RegistroScreen> {
         'privacidad_version': kPrivacidadVersion,
         'declaraciones': {
           'contratante_independiente': _aceptaIndependiente,
-          'comisiones_version': kComisionesVersion,
+          'comisiones_version': '1.0',
         },
       });
 

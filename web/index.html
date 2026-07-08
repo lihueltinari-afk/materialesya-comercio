@@ -41,9 +41,27 @@
     For more details:
     * https://docs.flutter.dev/platform-integration/web/initialization
   -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function(regs) {
+        regs.forEach(function(reg) {
+          reg.addEventListener('updatefound', function() {
+            var newSW = reg.installing;
+            newSW.addEventListener('statechange', function() {
+              if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
+                newSW.postMessage({ type: 'SKIP_WAITING' });
+                window.location.reload();
+              }
+            });
+          });
+          reg.update();
+        });
+      });
+    }
+  </script>
   <script src="flutter_bootstrap.js" async></script>
   <!-- Google Maps - Reemplazar YOUR_GOOGLE_MAPS_API_KEY con tu key real -->
   <!-- Ver GOOGLE_MAPS_SETUP.md en la raíz del proyecto para instrucciones -->
-  <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY&libraries=places&language=es&region=AR"></script>
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyClrb3k6ZI2NXmRFXXhxbV0zLXvhS_KEpM&libraries=places&language=es&region=AR"></script>
 </body>
 </html>

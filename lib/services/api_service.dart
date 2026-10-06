@@ -275,7 +275,7 @@ class ApiService {
     if (res['status'] == 200) {
       final data = res['data'];
       if (data is List) return data;
-      if (data is Map) return data['pedidos'] ?? [];
+      if (data is Map) return data['datos'] ?? data['pedidos'] ?? [];
     }
     return [];
   }

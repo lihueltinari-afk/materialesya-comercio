@@ -25,6 +25,7 @@ class PerfilScreen extends StatefulWidget {
 
 class _PerfilScreenState extends State<PerfilScreen> with WidgetsBindingObserver {
   Map<String, dynamic>? _comercio;
+  Map<String, dynamic>? _calificaciones;
   bool _cargando = true;
   bool _guardando = false;
   bool? _mpConectado;
@@ -50,6 +51,7 @@ class _PerfilScreenState extends State<PerfilScreen> with WidgetsBindingObserver
     WidgetsBinding.instance.addObserver(this);
     _cargarPerfil();
     _cargarEstadoMp();
+    _cargarCalificaciones();
   }
 
   // Cuando el comercio vuelve a la app después de autorizar en la pestaña de Mercado Pago
@@ -59,6 +61,13 @@ class _PerfilScreenState extends State<PerfilScreen> with WidgetsBindingObserver
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed && _mpConectado != true) {
       _cargarEstadoMp();
+    }
+  }
+
+  Future<void> _cargarCalificaciones() async {
+    final res = await ApiService.get('/comercio/mis-calificaciones');
+    if (mounted && res['status'] == 200) {
+      setState(() => _calificaciones = res['data'] as Map<String, dynamic>?);
     }
   }
 
@@ -342,6 +351,151 @@ class _PerfilScreenState extends State<PerfilScreen> with WidgetsBindingObserver
     );
   }
 
+  Widget _buildEstrellas(double promedio, {double size = 20}) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(5, (i) {
+        final llena = i < promedio.floor();
+        final media = !llena && i < promedio && (promedio - promedio.floor()) >= 0.5;
+        return Icon(
+          llena ? Icons.star : media ? Icons.star_half : Icons.star_border,
+          color: Colors.amber,
+          size: size,
+        );
+      }),
+    );
+  }
+
+  Widget _buildCalificacionesCard() {
+    final cal = _calificaciones;
+
+    if (cal == null) {
+      // Todavía cargando
+      return const Card(
+        child: Padding(
+          padding: EdgeInsets.all(16),
+          child: Row(children: [
+            SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
+            SizedBox(width: 12),
+            Text('Cargando calificaciones...', style: TextStyle(color: Colors.grey)),
+          ]),
+        ),
+      );
+    }
+
+    final promedio = (cal['promedio'] as num?)?.toDouble() ?? 0.0;
+    final total = (cal['total'] as num?)?.toInt() ?? 0;
+    final resenas = (cal['resenas'] as List<dynamic>?) ?? [];
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Calificaciones de clientes',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.secondary),
+            ),
+            const SizedBox(height: 12),
+            if (total == 0)
+              const Text(
+                'Todavía no tenés calificaciones. Aparecerán aquí cuando tus clientes califiquen sus pedidos.',
+                style: TextStyle(color: Colors.grey, fontSize: 13),
+              )
+            else ...[
+              // Resumen: promedio grande + estrellas + total
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Text(
+                    promedio.toStringAsFixed(1),
+                    style: const TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: AppColors.secondary),
+                  ),
+                  const SizedBox(width: 12),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildEstrellas(promedio, size: 22),
+                      const SizedBox(height: 4),
+                      Text(
+                        '$total ${total == 1 ? 'calificación' : 'calificaciones'}',
+                        style: const TextStyle(fontSize: 12, color: Colors.grey),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              if (resenas.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                const Text(
+                  'Últimas reseñas',
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: AppColors.secondary),
+                ),
+                const SizedBox(height: 8),
+                ...resenas.map((r) {
+                  final puntaje = (r['puntuacion'] as num?)?.toDouble() ?? 0;
+                  final nombre = r['cliente_nombre'] as String? ?? 'Cliente';
+                  final comentario = r['comentario'] as String?;
+                  final fecha = r['creado_en'] as String?;
+                  String fechaTexto = '';
+                  if (fecha != null) {
+                    try {
+                      final dt = DateTime.parse(fecha).toLocal();
+                      fechaTexto = '${dt.day}/${dt.month}/${dt.year}';
+                    } catch (_) {}
+                  }
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 10),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.background,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: AppColors.divider),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 14,
+                              backgroundColor: AppColors.primaryLight,
+                              child: Text(
+                                nombre.isNotEmpty ? nombre[0].toUpperCase() : '?',
+                                style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 13),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(nombre, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                            ),
+                            _buildEstrellas(puntaje, size: 15),
+                            if (fechaTexto.isNotEmpty) ...[
+                              const SizedBox(width: 6),
+                              Text(fechaTexto, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                            ],
+                          ],
+                        ),
+                        if (comentario != null && comentario.trim().isNotEmpty) ...[
+                          const SizedBox(height: 6),
+                          Text(
+                            comentario.trim(),
+                            style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                          ),
+                        ],
+                      ],
+                    ),
+                  );
+                }),
+              ],
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -573,6 +727,10 @@ class _PerfilScreenState extends State<PerfilScreen> with WidgetsBindingObserver
                     ),
                   ),
                 ),
+                const SizedBox(height: 16),
+
+                // Calificaciones del comercio
+                _buildCalificacionesCard(),
                 const SizedBox(height: 16),
 
                 // Mi cuenta

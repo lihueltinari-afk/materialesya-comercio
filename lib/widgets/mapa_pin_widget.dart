@@ -1,16 +1,10 @@
-// ignore: avoid_web_libraries_in_flutter
-import 'dart:html' as html;
 import 'dart:async';
-// ignore: depend_on_referenced_packages
+import 'dart:js_interop';
 import 'dart:ui_web' as ui;
 import 'package:flutter/material.dart';
+import 'package:web/web.dart' as web;
 import '../services/maps_service.dart';
 
-/// Widget de mapa Google Maps con pin arrastrable para Flutter Web.
-/// Usa HtmlElementView con un div que contiene el mapa JS inicializado mediante
-/// un script inline — evita la necesidad de dart:js allowInterop.
-/// Sin API key: aparece en gris con "For development purposes only".
-/// Con API key real: mapa completo, pin arrastrable con reverse geocoding.
 class MapaPinWidget extends StatefulWidget {
   final double lat;
   final double lng;
@@ -32,7 +26,8 @@ class MapaPinWidget extends StatefulWidget {
 class MapaPinWidgetState extends State<MapaPinWidget> {
   late final String _viewId;
   late final String _eventName;
-  StreamSubscription<html.MessageEvent>? _msgSub;
+  StreamSubscription<web.MessageEvent>? _msgSub;
+  JSFunction? _jsHandler;
 
   @override
   void initState() {
@@ -41,16 +36,14 @@ class MapaPinWidgetState extends State<MapaPinWidget> {
     _viewId = 'mapa-pin-$stamp';
     _eventName = 'mapa_pin_dragend_$stamp';
 
-    // ignore: undefined_prefixed_name
     ui.platformViewRegistry.registerViewFactory(_viewId, (int viewId) {
-      final container = html.DivElement()
-        ..id = _viewId
-        ..style.width = '100%'
-        ..style.height = '100%';
+      final container = web.document.createElement('div') as web.HTMLDivElement;
+      container.id = _viewId;
+      container.style.width = '100%';
+      container.style.height = '100%';
 
-      // Script inline que inicializa el mapa y comunica el dragend via postMessage
-      final script = html.ScriptElement()
-        ..innerHtml = '''
+      final script = web.document.createElement('script') as web.HTMLScriptElement;
+      script.textContent = '''
 (function() {
   function tryInit() {
     if (!window.google || !window.google.maps) {
@@ -84,34 +77,40 @@ class MapaPinWidgetState extends State<MapaPinWidget> {
 })();
 ''';
 
-      container.append(script);
+      container.appendChild(script);
       return container;
     });
 
-    // Escuchar mensajes del mapa JS via postMessage
-    _msgSub = html.window.onMessage.listen((event) {
+    final handler = (web.MessageEvent event) {
       try {
         final data = event.data;
         if (data == null) return;
-        final type = data['type'];
+        final map = (data as JSObject).dartify() as Map?;
+        if (map == null) return;
+        final type = map['type']?.toString();
         if (type == _eventName) {
-          final lat = (data['lat'] as num?)?.toDouble();
-          final lng = (data['lng'] as num?)?.toDouble();
+          final lat = (map['lat'] as num?)?.toDouble();
+          final lng = (map['lng'] as num?)?.toDouble();
           if (lat != null && lng != null && mounted) {
             MapsService.coordsADireccion(lat, lng).then((dir) {
-              if (mounted) {
-                widget.onPinMovido?.call(lat, lng, dir ?? '');
-              }
+              if (mounted) widget.onPinMovido?.call(lat, lng, dir ?? '');
             });
           }
         }
       } catch (_) {}
-    });
+    }.toJS;
+    web.window.addEventListener('message', handler);
+    _msgSub = Stream<web.MessageEvent>.empty().listen((_) {});
+    // guardamos el handler para removeEventListener en dispose
+    _jsHandler = handler;
   }
 
   @override
   void dispose() {
     _msgSub?.cancel();
+    if (_jsHandler != null) {
+      web.window.removeEventListener('message', _jsHandler!);
+    }
     super.dispose();
   }
 

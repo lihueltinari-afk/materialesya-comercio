@@ -7,6 +7,7 @@ import '../core/app_colors.dart';
 import 'pedidos_screen.dart';
 import 'login_screen.dart';
 import 'validar_retiro_screen.dart';
+import 'mystock_promo_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -187,19 +188,61 @@ class _HomeScreenState extends State<HomeScreen> {
                   // Métricas del día en grid 2x2
                   Text('Resumen de hoy', style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
                   const SizedBox(height: 10),
-                  GridView.count(
-                    crossAxisCount: 2,
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    mainAxisSpacing: 12,
-                    crossAxisSpacing: 12,
-                    childAspectRatio: 1.5,
-                    children: [
-                      _MetricCard(icon: Icons.receipt_long, label: 'Pedidos hoy', value: '${_estadisticas?['recibidos'] ?? 0}', color: AppColors.primary),
-                      _MetricCard(icon: Icons.inventory_2_outlined, label: 'En preparación', value: '${_estadisticas?['en_preparacion'] ?? 0}', color: AppColors.warning),
-                      _MetricCard(icon: Icons.check_circle_outline, label: 'Entregados', value: '${_estadisticas?['entregados'] ?? 0}', color: AppColors.success),
-                      _MetricCard(icon: Icons.attach_money, label: 'Ingresos del día', value: '\$${(num.tryParse('${_estadisticas?['ingresos'] ?? 0}') ?? 0).toStringAsFixed(0)}', color: const Color(0xFF6366F1)),
-                    ],
+                  Column(children: [
+                    Row(children: [
+                      Expanded(child: _MetricCard(icon: Icons.receipt_long, label: 'Pedidos hoy', value: '${_estadisticas?['recibidos'] ?? 0}', color: AppColors.primary)),
+                      const SizedBox(width: 12),
+                      Expanded(child: _MetricCard(icon: Icons.inventory_2_outlined, label: 'En preparación', value: '${_estadisticas?['en_preparacion'] ?? 0}', color: AppColors.warning)),
+                    ]),
+                    const SizedBox(height: 12),
+                    Row(children: [
+                      Expanded(child: _MetricCard(icon: Icons.check_circle_outline, label: 'Entregados', value: '${_estadisticas?['entregados'] ?? 0}', color: AppColors.success)),
+                      const SizedBox(width: 12),
+                      Expanded(child: _MetricCard(icon: Icons.attach_money, label: 'Ingresos del día', value: '\$${(num.tryParse('${_estadisticas?['ingresos'] ?? 0}') ?? 0).toStringAsFixed(0)}', color: const Color(0xFF6366F1))),
+                    ]),
+                  ]),
+                  const SizedBox(height: 16),
+
+                  // Banner MaterialesYaStock
+                  GestureDetector(
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MyStockPromoScreen())),
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF1A1A2E), Color(0xFF16213E)],
+                          begin: Alignment.centerLeft,
+                          end: Alignment.centerRight,
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: const Color(0xFFE8601C).withOpacity(0.6)),
+                        boxShadow: [BoxShadow(color: const Color(0xFFE8601C).withOpacity(0.08), blurRadius: 12, offset: const Offset(0, 4))],
+                      ),
+                      child: Row(children: [
+                        const Text('📦', style: TextStyle(fontSize: 28)),
+                        const SizedBox(width: 12),
+                        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          RichText(text: const TextSpan(children: [
+                            TextSpan(text: 'MaterialesYa', style: TextStyle(color: Color(0xFFE8601C), fontWeight: FontWeight.w800, fontSize: 14)),
+                            TextSpan(text: 'Stock', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 14)),
+                          ])),
+                          const SizedBox(height: 3),
+                          Text('Actualizá precios desde el PDF del proveedor — automáticamente.',
+                            style: GoogleFonts.poppins(fontSize: 12, color: const Color(0xFFCCCCCC), height: 1.4)),
+                          const SizedBox(height: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFE8601C),
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            child: Text('14 días gratis →',
+                              style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white)),
+                          ),
+                        ])),
+                        const Icon(Icons.arrow_forward_ios_rounded, color: Color(0xFFE8601C), size: 16),
+                      ]),
+                    ),
                   ),
                   const SizedBox(height: 12),
 
@@ -308,13 +351,13 @@ class _MetricCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: const [BoxShadow(color: Color(0x14000000), offset: Offset(0, 2), blurRadius: 8)],
       ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
         Container(
           padding: const EdgeInsets.all(7),
           decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)),
           child: Icon(icon, color: color, size: 18),
         ),
-        const Spacer(),
+        const SizedBox(height: 10),
         Text(value, style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
         Text(label, style: GoogleFonts.poppins(fontSize: 10, color: AppColors.textSecondary)),
       ]),

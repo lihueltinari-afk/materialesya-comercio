@@ -1,5 +1,6 @@
 ﻿import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:file_picker/file_picker.dart';
 import '../core/app_colors.dart';
 import '../services/api_service.dart';
@@ -531,6 +532,8 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
     return ListView(
       padding: const EdgeInsets.all(12),
       children: [
+        _BannerMyStock(mensaje: 'Importá listas de precios del proveedor y actualizá todo tu catálogo en segundos con MaterialesYaStock.'),
+        const SizedBox(height: 8),
         Padding(
           padding: const EdgeInsets.only(bottom: 10),
           child: Text('${resultados.length} resultado${resultados.length == 1 ? '' : 's'}',
@@ -832,6 +835,8 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                 child: const Text('Guardar cambios', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
               ),
             ),
+            const SizedBox(height: 16),
+            _BannerMyStock(mensaje: '¿Actualizás precios a mano? MaterialesYaStock los sincroniza desde listas PDF o Excel del proveedor — automáticamente.'),
           ]),
         ),
       ),
@@ -1287,5 +1292,48 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
         ),
       ),
     ]);
+  }
+}
+
+class _BannerMyStock extends StatelessWidget {
+  final String mensaje;
+  const _BannerMyStock({required this.mensaje});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => launchUrl(
+        Uri.parse('https://stock.materialesya.com.ar'),
+        mode: LaunchMode.externalApplication,
+      ),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF1A1A2E), Color(0xFF16213E)],
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+          ),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFE8601C).withOpacity(0.6)),
+        ),
+        child: Row(children: [
+          const Text('📦', style: TextStyle(fontSize: 22)),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              const Text('MaterialesYaStock',
+                style: TextStyle(color: Color(0xFFE8601C), fontWeight: FontWeight.w800, fontSize: 13)),
+              const SizedBox(height: 2),
+              Text(mensaje,
+                style: const TextStyle(color: Color(0xFFCCCCCC), fontSize: 12, height: 1.3)),
+            ]),
+          ),
+          const SizedBox(width: 8),
+          const Icon(Icons.arrow_forward_ios_rounded, color: Color(0xFFE8601C), size: 14),
+        ]),
+      ),
+    );
   }
 }

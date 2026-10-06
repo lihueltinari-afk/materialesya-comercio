@@ -19,6 +19,11 @@ class _SeleccionRubrosScreenState extends State<SeleccionRubrosScreen> {
   bool _cargando = true;
   bool _guardando = false;
 
+  // Sugerencias: mapa rubroId → lista de rubros sugeridos
+  final Map<int, List<dynamic>> _sugerencias = {};
+  // IDs ya consultados para no repetir llamadas
+  final Set<int> _consultados = {};
+
   @override
   void initState() {
     super.initState();
@@ -62,12 +67,28 @@ class _SeleccionRubrosScreenState extends State<SeleccionRubrosScreen> {
     }
   }
 
+  Future<void> _cargarSugerencias(int rubroId) async {
+    if (_consultados.contains(rubroId)) return;
+    _consultados.add(rubroId);
+    final res = await ApiService.get('/rubros/$rubroId/relacionados');
+    if (mounted && res['status'] == 200) {
+      final lista = res['data'] as List? ?? [];
+      if (lista.isNotEmpty) {
+        setState(() {
+          _sugerencias[rubroId] = lista;
+        });
+      }
+    }
+  }
+
   void _togglePrincipal(int id) {
     setState(() {
       if (_principales.contains(id)) {
         _principales.remove(id);
       } else if (_principales.length < 3) {
         _principales.add(id);
+        // Cargar sugerencias para el rubro recién seleccionado
+        _cargarSugerencias(id);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text('Ya elegiste tus 3 rubros principales. Podés agregar más como secundarios.'),
@@ -309,8 +330,102 @@ class _SeleccionRubrosScreenState extends State<SeleccionRubrosScreen> {
             );
           },
         ),
+
+        // --- Sección de sugerencias ---
+        _buildSugerencias(seleccionados: seleccionados, onTap: onTap),
       ]),
     );
+  }
+
+  /// Construye chips de rubros sugeridos basándose en los rubros actualmente seleccionados.
+  Widget _buildSugerencias({
+    required List<int> seleccionados,
+    required Function(int) onTap,
+  }) {
+    if (seleccionados.isEmpty) return const SizedBox.shrink();
+
+    // Reunir sugerencias únicas que no estén ya seleccionadas ni en principales
+    final Set<int> yaElegidos = {..._principales, ..._secundarios};
+    final Map<int, dynamic> sugeridosUnicos = {};
+    for (final id in seleccionados) {
+      for (final r in (_sugerencias[id] ?? [])) {
+        final rid = r['id'] as int;
+        if (!yaElegidos.contains(rid)) {
+          sugeridosUnicos[rid] = r;
+        }
+      }
+    }
+
+    if (sugeridosUnicos.isEmpty) return const SizedBox.shrink();
+
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      const SizedBox(height: 24),
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: AppColors.primary.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+        ),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            const Icon(Icons.lightbulb_outline, color: AppColors.primary, size: 16),
+            const SizedBox(width: 6),
+            Text(
+              '¿También trabajás con...?',
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: AppColors.primary,
+              ),
+            ),
+          ]),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: sugeridosUnicos.values.map((r) {
+              final id = r['id'] as int;
+              return GestureDetector(
+                onTap: () => onTap(id),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: AppColors.primary.withValues(alpha: 0.4)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.04),
+                        blurRadius: 4,
+                        offset: const Offset(0, 1),
+                      ),
+                    ],
+                  ),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    Text(
+                      r['icono_emoji'] as String,
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      r['nombre'] as String,
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    const Icon(Icons.add_circle_outline, size: 14, color: AppColors.primary),
+                  ]),
+                ),
+              );
+            }).toList(),
+          ),
+        ]),
+      ),
+    ]);
   }
 
   Widget _buildConfirmacion() {

@@ -18,7 +18,7 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _emailCtrl = TextEditingController(text: 'comercio@demo.com');
-  final _passCtrl  = TextEditingController(text: 'demo1234');
+  final _passCtrl  = TextEditingController(text: 'demo123');
   bool _cargando = false;
   bool _cargandoGoogle = false;
   bool _verPass  = false;

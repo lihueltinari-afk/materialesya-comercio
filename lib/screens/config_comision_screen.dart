@@ -20,7 +20,7 @@ class _ConfigComisionScreenState extends State<ConfigComisionScreen> {
   String _modo = 'absorber'; // 'absorber' | 'trasladar'
   bool _porProducto = false;
   bool _mostrarTooltip = false;
-  static const double _pct = 10;
+  static const double _pct = 8;
 
   @override
   void initState() {

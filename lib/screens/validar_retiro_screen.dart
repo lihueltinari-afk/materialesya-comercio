@@ -32,22 +32,24 @@ class _ValidarRetiroScreenState extends State<ValidarRetiroScreen> {
         setState(() { _error = 'Ingresá un número de pedido válido'; _buscando = false; });
         return;
       }
-      final res = await ApiService.get('/comercio/pedidos/$pedidoId');
+      final res = await ApiService.get('/comercio/pedidos/buscar?numero=$pedidoId');
       if (res['status'] == 200) {
         final data = res['data'];
-        final pedido = data is Map ? (data['pedido'] ?? data) : null;
+        final pedido = data is Map ? data : null;
         if (pedido == null) {
           setState(() { _error = 'Pedido no encontrado'; _buscando = false; });
           return;
         }
-        final modoEntrega = pedido['modo_entrega']?.toString() ?? '';
-        if (modoEntrega != 'retiro' && modoEntrega != 'pickup') {
-          setState(() { _error = 'Este pedido no es de retiro en comercio'; _buscando = false; });
+        // modo_entrega es obligatorio desde migración 043; si está vacío el pedido es de envío
+        final modoEntrega = pedido['modo_entrega']?.toString() ?? 'envio';
+        if (modoEntrega != 'retiro') {
+          setState(() { _error = 'El pedido #$pedidoId es de envío a domicilio, no de retiro en comercio'; _buscando = false; });
           return;
         }
         setState(() { _pedido = Map<String, dynamic>.from(pedido); _buscando = false; });
       } else {
-        setState(() { _error = 'Pedido no encontrado'; _buscando = false; });
+        final msg = res['data'] is Map ? res['data']['error']?.toString() : null;
+        setState(() { _error = msg ?? 'Pedido no encontrado'; _buscando = false; });
       }
     } catch (_) {
       setState(() { _error = 'Error al buscar el pedido'; _buscando = false; });
